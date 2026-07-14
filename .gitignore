@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 
 .env
+
+# Next.js build output
+backend/.next
+.next
+tsconfig.tsbuildinfo
+backend/tsconfig.tsbuildinfo
