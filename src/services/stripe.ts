@@ -1,4 +1,10 @@
+// Stripe Connect Service — Swap STRIPE_SECRET_KEY for production key
+const STRIPE_SECRET_KEY = 'sk_test_REPLACE_WITH_REAL_KEY';
+
 import { db } from '../store/database';
+
+export interface StripeOnboardResult { success: boolean; accountId: string; }
+export interface StripeCardResult { success: boolean; token: string; last4: string; }
 
 export interface CardData {
   number: string;
@@ -6,33 +12,18 @@ export interface CardData {
   cvc: string;
 }
 
-export interface OnboardingResult {
-  success: boolean;
-  accountId: string;
-}
-
-export interface SaveCardResult {
-  success: boolean;
-  token: string;
-}
-
-export async function onboardWorker(workerId: string): Promise<OnboardingResult> {
-  // Simulate Stripe Express onboarding delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
+// Simulates Stripe Express Connect onboarding for a worker
+export async function onboardWorker(workerId: string): Promise<StripeOnboardResult> {
+  await new Promise(r => setTimeout(r, 1200)); // simulate API delay
   db.updateWorkerStripeStatus(workerId, true);
-  return {
-    success: true,
-    accountId: `acct_mock_${workerId.replace('usr_', '')}`,
-  };
+  return { success: true, accountId: `acct_mock_${workerId.replace('usr_', '')}` };
 }
 
-export async function saveCreditCard(businessId: string, _cardData: CardData): Promise<SaveCardResult> {
-  // Simulate Stripe card tokenization delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+// Simulates saving a card via Stripe.js tokenization
+export async function saveCreditCard(businessId: string, cardData: CardData): Promise<StripeCardResult> {
+  await new Promise(r => setTimeout(r, 1000));
   const token = 'tok_mock_123';
-  db.updateBusinessPaymentMethod(businessId, token);
-  return {
-    success: true,
-    token,
-  };
+  const last4 = cardData.number.slice(-4);
+  db.saveBusinessPaymentMethod(businessId, token, last4);
+  return { success: true, token, last4 };
 }

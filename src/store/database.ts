@@ -69,6 +69,7 @@ class MockDatabase {
       zip_code: '94105',
       verified: true,
       default_payment_method: null,
+      payment_last4: null,
       created_at: '2026-01-15T08:30:00Z',
     };
 
@@ -306,6 +307,14 @@ class MockDatabase {
     return updated;
   }
 
+  saveBusinessPaymentMethod(businessProfileId: string, token: string, last4: string): BusinessProfile | undefined {
+    const profile = this.businessProfiles.get(businessProfileId);
+    if (!profile) return undefined;
+    const updated = { ...profile, default_payment_method: token, payment_last4: last4 };
+    this.businessProfiles.set(businessProfileId, updated);
+    return updated;
+  }
+
   // Worker Profile operations
   getWorkerProfileByUserId(userId: string): WorkerProfile | undefined {
     return Array.from(this.workerProfiles.values()).find(wp => wp.user_id === userId);
@@ -328,6 +337,14 @@ class MockDatabase {
     if (!profile) return undefined;
     const updated = { ...profile, stripe_account_active: status };
     this.workerProfiles.set(profile.id, updated);
+    return updated;
+  }
+
+  activateWorkerStripe(workerProfileId: string): WorkerProfile | undefined {
+    const profile = this.workerProfiles.get(workerProfileId);
+    if (!profile) return undefined;
+    const updated = { ...profile, stripe_account_active: true };
+    this.workerProfiles.set(workerProfileId, updated);
     return updated;
   }
 

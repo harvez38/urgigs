@@ -49,11 +49,11 @@ export function WorkerEarnings() {
           {stripeActive ? (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#22C55E]/20 flex items-center justify-center">
-                <span className="text-lg">\uD83D\uDCB3</span>
+                <span className="text-lg">💳</span>
               </div>
               <div>
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#22C55E]">
-                  \u2713 Payouts Active via Stripe
+                  ✓ Payouts Active via Stripe
                 </span>
                 <p className="text-xs text-surface-400 mt-0.5">Direct deposits enabled to your bank</p>
               </div>
@@ -62,7 +62,7 @@ export function WorkerEarnings() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
-                  <span className="text-lg">\uD83C\uDFE6</span>
+                  <span className="text-lg">🏦</span>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white">Direct Payouts</p>
@@ -80,7 +80,7 @@ export function WorkerEarnings() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Setting up\u2026
+                    Setting up…
                   </span>
                 ) : (
                   'Setup Direct Payouts'
@@ -111,7 +111,7 @@ export function WorkerEarnings() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center">
-                <span className="text-2xl">\u23F3</span>
+                <span className="text-2xl">⏳</span>
               </div>
             </div>
           </div>
@@ -122,7 +122,7 @@ export function WorkerEarnings() {
         
         {earnings.history.length === 0 ? (
           <EmptyState
-            icon="\uD83D\uDCB0"
+            icon="💰"
             title="No earnings yet"
             description="Complete gigs to start earning. Your earnings ledger will appear here."
           />
@@ -139,7 +139,7 @@ export function WorkerEarnings() {
                       <h4 className="font-semibold text-surface-900 text-sm">{shift.title}</h4>
                       <p className="text-xs text-primary-600 font-medium mt-0.5">{shift.company_name}</p>
                       <p className="text-xs text-surface-500 mt-0.5">
-                        {new Date(shift.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} \u00B7 {hours}h @ ${shift.hourly_rate}/hr
+                        {new Date(shift.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {hours}h @ ${shift.hourly_rate}/hr
                       </p>
                     </div>
                     <div className="text-right">
@@ -156,7 +156,7 @@ export function WorkerEarnings() {
                             disabled={releasingId === shift.id}
                             className="text-[10px] font-bold text-[#22C55E] bg-[#22C55E]/10 hover:bg-[#22C55E]/20 px-2.5 py-1 rounded-full transition-all disabled:opacity-50"
                           >
-                            {releasingId === shift.id ? 'Releasing\u2026' : 'Release Funds'}
+                            {releasingId === shift.id ? 'Releasing…' : 'Release Funds'}
                           </button>
                         </div>
                       ) : (

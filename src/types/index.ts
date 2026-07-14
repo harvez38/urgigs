@@ -22,6 +22,7 @@ export interface BusinessProfile {
   zip_code: string;
   verified: boolean;
   default_payment_method: string | null;
+  payment_last4: string | null;
   created_at: string;
 }
 
