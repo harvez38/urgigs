@@ -1,5 +1,6 @@
 import { User, BusinessProfile, WorkerProfile, Shift, Notification, BackgroundCheckStatus } from '../types';
 import { IS_STRIPE_LIVE } from '../config/stripe';
+import { sendSMS } from '../services/twilio';
 
 export interface ShiftWithBusiness extends Shift {
   company_name: string;
@@ -595,12 +596,18 @@ class MockDatabase {
 
     this.shifts.set(shift.id, shift);
 
-    // TRIGGER 1: Notify all workers about new gig
+    // TRIGGER 1: Notify all workers about new gig (in-app)
     const workers = Array.from(this.users.values()).filter(u => u.role === 'worker');
     workers.forEach(worker => {
       this.createNotification(
         worker.id,
         `New Gig Alert: A business is looking for a ${shift.title}!`
+      );
+
+      // Phase 5B: SMS alert to workers about new shift
+      sendSMS(
+        worker.phone,
+        `UrGigs Alert: A new ${shift.title} shift paying $${shift.hourly_rate}/hr is available! Open the app to claim it.`
       );
     });
 
@@ -647,11 +654,22 @@ class MockDatabase {
     };
     this.shifts.set(shiftId, updated);
 
-    // TRIGGER 2: Notify business owner that shift was claimed
+    // TRIGGER 2: Notify business owner that shift was claimed (in-app)
     this.createNotification(
       shift.posted_by,
       `Shift Filled! A worker has claimed your ${shift.title} slot.`
     );
+
+    // Phase 5B: SMS alert to employer about shift claimed
+    const employer = this.getUserById(shift.posted_by);
+    const worker = this.getUserById(workerId);
+    if (employer && worker) {
+      const shiftDate = new Date(shift.start_time).toLocaleDateString();
+      sendSMS(
+        employer.phone,
+        `UrGigs Alert: Your ${shift.title} shift on ${shiftDate} has been claimed by ${worker.full_name}!`
+      );
+    }
 
     return updated;
   }
