@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         success: true,
         accountId: `acct_mock_${workerId.replace('usr_', '')}`,
         mock: true,
-        message: 'Stripe not configured \u2014 returning mock account',
+        message: 'Stripe not configured — returning mock account',
       });
     }
 

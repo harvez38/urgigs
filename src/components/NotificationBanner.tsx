@@ -16,7 +16,7 @@ export function NotificationBanner() {
             : 'bg-blue-600/95';
 
         const icon =
-          banner.type === 'error' ? '\u26a0\ufe0f' : banner.type === 'success' ? '\u2713' : '\u2139\ufe0f';
+          banner.type === 'error' ? '⚠️' : banner.type === 'success' ? '✓' : 'ℹ️';
 
         return (
           <div
@@ -29,7 +29,7 @@ export function NotificationBanner() {
               onClick={() => dismissBanner(banner.id)}
               className="text-white/70 hover:text-white ml-2 text-lg leading-none"
             >
-              \u00d7
+              ×
             </button>
           </div>
         );

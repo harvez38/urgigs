@@ -102,7 +102,7 @@ export function EmployerProfile() {
               <p className="text-sm text-surface-400">{currentUser?.email}</p>
               {businessProfile?.verified && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-success-500 bg-success-500/10 px-2 py-0.5 rounded-full mt-1">
-                  \u2713 Verified Business
+                  ✓ Verified Business
                 </span>
               )}
             </div>
@@ -111,13 +111,13 @@ export function EmployerProfile() {
 
         {saved && (
           <div className="bg-success-500/10 border border-success-500/30 text-success-500 text-sm font-medium px-4 py-3 rounded-xl mb-4">
-            \u2713 Profile updated successfully
+            ✓ Profile updated successfully
           </div>
         )}
 
         {cardSaved && (
           <div className="bg-success-500/10 border border-success-500/30 text-success-500 text-sm font-medium px-4 py-3 rounded-xl mb-4">
-            \u2713 Payment method saved successfully
+            ✓ Payment method saved successfully
           </div>
         )}
 
@@ -131,11 +131,11 @@ export function EmployerProfile() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-surface-700 flex items-center justify-center">
-                  <span className="text-lg">\ud83d\udcb3</span>
+                  <span className="text-lg">💳</span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">**** **** **** {businessProfile?.payment_last4 || "****"}</p>
-                  <p className="text-xs text-surface-400">Visa \u00b7 Default</p>
+                  <p className="text-xs text-surface-400">Visa · Default</p>
                 </div>
               </div>
               <span className="text-[10px] font-semibold text-[#22C55E] bg-[#22C55E]/10 px-2 py-0.5 rounded-full">
@@ -145,7 +145,7 @@ export function EmployerProfile() {
           ) : (
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-surface-700 flex items-center justify-center">
-                <span className="text-lg">\ud83d\udcb3</span>
+                <span className="text-lg">💳</span>
               </div>
               <p className="text-sm text-surface-400">No payment method saved</p>
             </div>
@@ -284,7 +284,7 @@ export function EmployerProfile() {
                 onClick={() => setShowPaymentModal(false)}
                 className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-surface-400 hover:text-white"
               >
-                \u2715
+                ✕
               </button>
             </div>
 
@@ -310,7 +310,7 @@ export function EmployerProfile() {
 
             {cardError && (
               <div className="mb-4 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-medium px-3 py-2 rounded-lg">
-                \u26a0\ufe0f {cardError}
+                ⚠️ {cardError}
               </div>
             )}
 
@@ -367,7 +367,7 @@ export function EmployerProfile() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Processing via Stripe\u2026
+                  Processing via Stripe…
                 </span>
               ) : (
                 'Save Payment Method'
@@ -375,7 +375,7 @@ export function EmployerProfile() {
             </button>
 
             <p className="text-[10px] text-surface-500 text-center mt-3">
-              \ud83d\udd12 Secured by Stripe Connect. Your card info is encrypted end-to-end.
+              🔒 Secured by Stripe Connect. Your card info is encrypted end-to-end.
             </p>
           </div>
         </div>

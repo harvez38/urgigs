@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         success: true,
         transferId: mockId,
         mock: true,
-        message: 'Stripe not configured \u2014 returning mock transfer',
+        message: 'Stripe not configured — returning mock transfer',
       });
     }
 

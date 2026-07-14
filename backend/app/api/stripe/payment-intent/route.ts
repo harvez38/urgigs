@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         paymentIntentId: mockId,
         clientSecret: `${mockId}_secret_mock`,
         mock: true,
-        message: 'Stripe not configured \u2014 returning mock PaymentIntent',
+        message: 'Stripe not configured — returning mock PaymentIntent',
       });
     }
 

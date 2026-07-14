@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
         success: true,
         sid: `mock_sms_${Date.now()}`,
         mock: true,
-        message: 'Twilio not configured \u2014 SMS logged to console',
+        message: 'Twilio not configured — SMS logged to console',
       });
     }
 
