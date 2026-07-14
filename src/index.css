@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface-900 text-white;
+    overscroll-behavior: none;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-500 text-surface-900 font-bold py-3.5 px-6 rounded-xl
+           active:scale-[0.97] transition-all duration-150 ease-out
+           hover:bg-primary-400 shadow-sm;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-800 text-white font-semibold py-3.5 px-6 rounded-xl
+           border border-surface-700 active:scale-[0.97] transition-all duration-150 ease-out
+           hover:bg-surface-700 shadow-sm;
+  }
+
+  .btn-success {
+    @apply bg-success-500 text-white font-bold py-3.5 px-6 rounded-xl
+           active:scale-[0.97] transition-all duration-150 ease-out
+           hover:bg-success-600 shadow-sm;
+  }
+
+  .btn-alert {
+    @apply bg-alert-500 text-white font-bold py-3.5 px-6 rounded-xl
+           active:scale-[0.97] transition-all duration-150 ease-out
+           hover:bg-alert-600 shadow-sm;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3.5 rounded-xl border border-surface-700 bg-surface-800
+           text-white placeholder:text-surface-500 font-medium
+           focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500
+           transition-all duration-150;
+  }
+
+  .card {
+    @apply bg-secondary-200 rounded-2xl shadow-card p-5 border border-secondary-300;
+  }
+
+  .card-dark {
+    @apply bg-surface-800 rounded-2xl shadow-card p-5 border border-surface-700;
+  }
+
+  .screen-container {
+    @apply min-h-screen max-w-md mx-auto relative;
+  }
+}
