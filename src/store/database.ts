@@ -68,6 +68,7 @@ class MockDatabase {
       state: 'CA',
       zip_code: '94105',
       verified: true,
+      default_payment_method: null,
       created_at: '2026-01-15T08:30:00Z',
     };
 
@@ -84,6 +85,7 @@ class MockDatabase {
       bio: 'Experienced event worker with bartending certification and excellent customer service skills.',
       rating: 4.8,
       gigs_completed: 47,
+      stripe_account_active: false,
       created_at: '2026-02-20T10:30:00Z',
     };
 
@@ -296,6 +298,14 @@ class MockDatabase {
     return updated;
   }
 
+  updateBusinessPaymentMethod(businessId: string, token: string): BusinessProfile | undefined {
+    const profile = this.businessProfiles.get(businessId);
+    if (!profile) return undefined;
+    const updated = { ...profile, default_payment_method: token };
+    this.businessProfiles.set(businessId, updated);
+    return updated;
+  }
+
   // Worker Profile operations
   getWorkerProfileByUserId(userId: string): WorkerProfile | undefined {
     return Array.from(this.workerProfiles.values()).find(wp => wp.user_id === userId);
@@ -310,6 +320,14 @@ class MockDatabase {
     if (!profile) return undefined;
     const updated = { ...profile, ...updates };
     this.workerProfiles.set(id, updated);
+    return updated;
+  }
+
+  updateWorkerStripeStatus(workerId: string, status: boolean): WorkerProfile | undefined {
+    const profile = Array.from(this.workerProfiles.values()).find(wp => wp.user_id === workerId);
+    if (!profile) return undefined;
+    const updated = { ...profile, stripe_account_active: status };
+    this.workerProfiles.set(profile.id, updated);
     return updated;
   }
 
@@ -382,6 +400,18 @@ class MockDatabase {
       `Shift Filled! A worker has claimed your ${shift.title} slot.`
     );
 
+    return updated;
+  }
+
+  releaseFunds(shiftId: string): Shift | undefined {
+    const shift = this.shifts.get(shiftId);
+    if (!shift || shift.status !== 'completed') return undefined;
+    const updated: Shift = {
+      ...shift,
+      status: 'paid',
+      updated_at: new Date().toISOString(),
+    };
+    this.shifts.set(shiftId, updated);
     return updated;
   }
 
