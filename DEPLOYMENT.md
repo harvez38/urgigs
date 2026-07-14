@@ -24,7 +24,7 @@ The `vercel.json` rewrites `/api/*` requests to the backend Next.js serverless f
 ### Backend (Server-side)
 
 | Variable | Description | Example |
-|----------|-------------|--------|
+|----------|-------------|---------|
 | `STRIPE_SECRET_KEY` | Stripe secret key for payment processing | `sk_live_...` or `sk_test_...` |
 | `TWILIO_ACCOUNT_SID` | Twilio Account SID for SMS | `AC...` |
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token | (from Twilio console) |
@@ -34,14 +34,14 @@ The `vercel.json` rewrites `/api/*` requests to the backend Next.js serverless f
 ### Frontend (Client-side, prefixed with VITE_)
 
 | Variable | Description | Example |
-|----------|-------------|--------|
+|----------|-------------|---------|
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key for client | `pk_live_...` or `pk_test_...` |
 | `VITE_API_BASE_URL` | Backend API base URL | `https://urgigs.vercel.app/api` |
 
 ### Database (if applicable)
 
 | Variable | Description | Example |
-|----------|-------------|--------|
+|----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL/MySQL connection string | `postgresql://user:pass@host:5432/db` |
 
 ---
