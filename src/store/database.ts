@@ -1,11 +1,18 @@
-import { User, BusinessProfile, WorkerProfile, Shift } from '../types';
+import { User, BusinessProfile, WorkerProfile, Shift, Notification } from '../types';
+
+export interface ShiftWithBusiness extends Shift {
+  company_name: string;
+  estimated_total_pay: number;
+}
 
 class MockDatabase {
   private users: Map<string, User> = new Map();
   private businessProfiles: Map<string, BusinessProfile> = new Map();
   private workerProfiles: Map<string, WorkerProfile> = new Map();
   private shifts: Map<string, Shift> = new Map();
+  private notifications: Map<string, Notification> = new Map();
   private idCounter = 100;
+  private notifCounter = 0;
 
   constructor() {
     this.seed();
@@ -208,6 +215,43 @@ class MockDatabase {
     shifts.forEach(s => this.shifts.set(s.id, s));
   }
 
+  // Notification operations
+  createNotification(recipientId: string, message: string): Notification {
+    const notification: Notification = {
+      id: this.generateId('notif'),
+      recipient_id: recipientId,
+      message,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    };
+    this.notifications.set(notification.id, notification);
+    return notification;
+  }
+
+  getNotificationsByUserId(userId: string): Notification[] {
+    return Array.from(this.notifications.values())
+      .filter(n => n.recipient_id === userId)
+      .sort((a, b) => {
+        const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        return b.id.localeCompare(a.id);
+      });
+  }
+
+  getUnreadNotificationCount(userId: string): number {
+    return Array.from(this.notifications.values())
+      .filter(n => n.recipient_id === userId && !n.is_read)
+      .length;
+  }
+
+  markNotificationsAsRead(userId: string): void {
+    this.notifications.forEach((notification, id) => {
+      if (notification.recipient_id === userId && !notification.is_read) {
+        this.notifications.set(id, { ...notification, is_read: true });
+      }
+    });
+  }
+
   // User operations
   findUserByEmail(email: string): User | undefined {
     return Array.from(this.users.values()).find(u => u.email === email);
@@ -273,6 +317,16 @@ class MockDatabase {
       updated_at: now,
     };
     this.shifts.set(shift.id, shift);
+
+    // TRIGGER 1: Notify all workers about new gig
+    const workers = Array.from(this.users.values()).filter(u => u.role === 'worker');
+    workers.forEach(worker => {
+      this.createNotification(
+        worker.id,
+        `New Gig Alert: A business is looking for a ${shift.title}!`
+      );
+    });
+
     return shift;
   }
 
@@ -315,11 +369,22 @@ class MockDatabase {
       updated_at: new Date().toISOString(),
     };
     this.shifts.set(shiftId, updated);
+
+    // TRIGGER 2: Notify business owner that shift was claimed
+    this.createNotification(
+      shift.posted_by,
+      `Shift Filled! A worker has claimed your ${shift.title} slot.`
+    );
+
     return updated;
   }
 
   getShiftsByWorkerId(workerId: string): Shift[] {
     return Array.from(this.shifts.values()).filter(s => s.worker_id === workerId);
+  }
+
+  getAssignedShiftsByWorkerId(workerId: string): Shift[] {
+    return Array.from(this.shifts.values()).filter(s => s.worker_id === workerId && s.status === 'assigned');
   }
 
   getPaidShiftsByWorkerId(workerId: string): Shift[] {
@@ -341,6 +406,52 @@ class MockDatabase {
       const business = this.businessProfiles.get(shift.business_id)!;
       return { ...shift, business };
     });
+  }
+
+  getOpenShiftsWithBusiness(): ShiftWithBusiness[] {
+    return this.getOpenShifts().map(shift => {
+      const business = this.businessProfiles.get(shift.business_id);
+      const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / 3600000;
+      return {
+        ...shift,
+        company_name: business?.company_name ?? 'Unknown Company',
+        estimated_total_pay: hours * shift.hourly_rate,
+      };
+    });
+  }
+
+  getAssignedShiftsWithBusiness(workerId: string): ShiftWithBusiness[] {
+    return this.getAssignedShiftsByWorkerId(workerId).map(shift => {
+      const business = this.businessProfiles.get(shift.business_id);
+      const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / 3600000;
+      return {
+        ...shift,
+        company_name: business?.company_name ?? 'Unknown Company',
+        estimated_total_pay: hours * shift.hourly_rate,
+      };
+    });
+  }
+
+  getShiftWithBusiness(shiftId: string): ShiftWithBusiness | undefined {
+    const shift = this.shifts.get(shiftId);
+    if (!shift) return undefined;
+    const business = this.businessProfiles.get(shift.business_id);
+    const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / 3600000;
+    return {
+      ...shift,
+      company_name: business?.company_name ?? 'Unknown Company',
+      estimated_total_pay: hours * shift.hourly_rate,
+    };
+  }
+
+  reset() {
+    this.users.clear();
+    this.businessProfiles.clear();
+    this.workerProfiles.clear();
+    this.shifts.clear();
+    this.notifications.clear();
+    this.idCounter = 100;
+    this.seed();
   }
 }
 
