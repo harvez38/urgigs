@@ -1,56 +1,41 @@
-// Twilio SMS Service — Phase 5B
-// Supports mock mode (logs to console) when env vars are not configured
+// Twilio SMS Service — Phase 5C: Calls backend API routes
+// No secrets on the frontend; all SMS logic goes through the backend
+import { API_BASE_URL } from '../config/api';
+import { useNotificationBanner } from '../store/notificationBanner';
 
-const TWILIO_ACCOUNT_SID = import.meta.env.VITE_TWILIO_ACCOUNT_SID || '';
-const TWILIO_AUTH_TOKEN = import.meta.env.VITE_TWILIO_AUTH_TOKEN || '';
-const TWILIO_PHONE_NUMBER = import.meta.env.VITE_TWILIO_PHONE_NUMBER || '';
+export const IS_TWILIO_LIVE = true; // determined by backend config
 
-function isMockMode(): boolean {
-  return (
-    !TWILIO_ACCOUNT_SID ||
-    TWILIO_ACCOUNT_SID.startsWith('your_') ||
-    !TWILIO_AUTH_TOKEN ||
-    TWILIO_AUTH_TOKEN.startsWith('your_') ||
-    !TWILIO_PHONE_NUMBER ||
-    TWILIO_PHONE_NUMBER.startsWith('your_')
-  );
-}
-
-export const IS_TWILIO_LIVE: boolean = !isMockMode();
-
-export async function sendSMS(to: string, message: string): Promise<{ success: boolean; sid?: string }> {
-  if (isMockMode()) {
-    console.log(`[Twilio SMS Sent to ${to}]: ${message}`);
-    return { success: true, sid: `mock_sms_${Date.now()}` };
-  }
-
-  // Real Twilio API call via REST
+export async function sendSMS(to: string, message: string): Promise<{ success: boolean; sid?: string; mock?: boolean }> {
   try {
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
-    const body = new URLSearchParams({
-      To: to,
-      From: TWILIO_PHONE_NUMBER,
-      Body: message,
-    });
-
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE_URL}/api/twilio/send`, {
       method: 'POST',
-      headers: {
-        'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body.toString(),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, message }),
     });
 
     if (!response.ok) {
-      console.error('[Twilio] SMS send failed:', response.status);
-      return { success: false };
+      const errData = await response.json().catch(() => ({ error: 'Network error' }));
+      throw new Error(errData.error || `HTTP ${response.status}`);
     }
 
     const data = await response.json();
-    return { success: true, sid: data.sid };
-  } catch (error) {
-    console.error('[Twilio] SMS send error:', error);
+    return { success: data.success, sid: data.sid, mock: data.mock };
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : 'SMS send failed';
+    console.error('[Twilio Service]', errMsg);
+    useNotificationBanner.getState().showBanner('error', `SMS: ${errMsg}`);
     return { success: false };
+  }
+}
+
+// Check if backend Twilio is configured
+export async function checkTwilioStatus(): Promise<{ configured: boolean }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/health`);
+    if (!response.ok) return { configured: false };
+    const data = await response.json();
+    return { configured: data.twilio_configured };
+  } catch {
+    return { configured: false };
   }
 }
