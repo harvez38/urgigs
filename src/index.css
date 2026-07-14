@@ -79,7 +79,9 @@
   .animate-slide-up {
     animation: slide-up 0.3s ease-out forwards;
   }
+}
 
+@layer utilities {
   @keyframes slide-in-right {
     from {
       transform: translateX(100%);

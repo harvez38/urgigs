@@ -66,7 +66,6 @@ export interface AuthState {
   currentUser: User | null;
   isAuthenticated: boolean;
 }
-
 export interface Notification {
   id: string;
   recipient_id: string;
