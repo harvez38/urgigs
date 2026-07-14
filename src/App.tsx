@@ -8,6 +8,7 @@ import { WorkerFindGigs } from './screens/WorkerFindGigs';
 import { WorkerEarnings } from './screens/WorkerEarnings';
 import { WorkerProfile } from './screens/WorkerProfile';
 import { AdminDashboard } from './screens/AdminDashboard';
+import { NotificationBanner } from './components/NotificationBanner';
 
 function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; allowedRole: 'business' | 'worker' | 'admin' }) {
   const { isAuthenticated, currentUser } = useAuthStore();
@@ -38,6 +39,7 @@ function AuthRedirect() {
 function App() {
   return (
     <BrowserRouter>
+      <NotificationBanner />
       <Routes>
         <Route path="/" element={<AuthRedirect />} />
         
