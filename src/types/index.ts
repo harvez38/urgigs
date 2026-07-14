@@ -86,3 +86,12 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
 }
+export interface Review {
+  id: string;
+  shift_id: string;
+  reviewer_id: string;
+  reviewee_id: string;
+  rating_stars: number; // 1-5
+  feedback_text: string;
+  created_at: string;
+}

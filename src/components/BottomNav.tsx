@@ -15,6 +15,7 @@ export function BottomNav() {
   const businessNav: NavItem[] = [
     { path: '/employer', label: 'Shifts', icon: '\ud83d\udccb' },
     { path: '/employer/post', label: 'Post', icon: '\u2795' },
+    { path: '/employer/discover', label: 'Discover', icon: '\ud83d\udd0d' },
     { path: '/employer/profile', label: 'Profile', icon: '\ud83d\udc64' },
   ];
 

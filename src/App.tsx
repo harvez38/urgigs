@@ -4,6 +4,7 @@ import { WelcomeScreen } from './screens/WelcomeScreen';
 import { EmployerHub } from './screens/EmployerHub';
 import { PostShiftScreen } from './screens/PostShiftScreen';
 import { EmployerProfile } from './screens/EmployerProfile';
+import { WorkerDiscovery } from './screens/WorkerDiscovery';
 import { WorkerFindGigs } from './screens/WorkerFindGigs';
 import { WorkerEarnings } from './screens/WorkerEarnings';
 import { WorkerProfile } from './screens/WorkerProfile';
@@ -67,6 +68,14 @@ function App() {
           element={
             <ProtectedRoute allowedRole="business">
               <PostShiftScreen />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employer/discover"
+          element={
+            <ProtectedRoute allowedRole="business">
+              <WorkerDiscovery />
             </ProtectedRoute>
           }
         />
