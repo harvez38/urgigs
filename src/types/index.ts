@@ -69,6 +69,8 @@ export interface Shift {
   check_out_time: string | null;
   actual_lat: number | null;
   actual_lng: number | null;
+  stripe_payment_intent_id?: string;
+  stripe_transfer_id?: string;
   created_at: string;
   updated_at: string;
 }

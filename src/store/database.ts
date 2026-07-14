@@ -1,4 +1,5 @@
 import { User, BusinessProfile, WorkerProfile, Shift, Notification, BackgroundCheckStatus } from '../types';
+import { IS_STRIPE_LIVE } from '../config/stripe';
 
 export interface ShiftWithBusiness extends Shift {
   company_name: string;
@@ -19,12 +20,23 @@ export interface AdminStats {
   disputedShifts: number;
 }
 
+export interface TransactionRecord {
+  shift_id: string;
+  amount: number;
+  platform_fee: number;
+  worker_payout: number;
+  stripe_payment_intent_id?: string;
+  stripe_transfer_id?: string;
+  created_at: string;
+}
+
 class MockDatabase {
   private users: Map<string, User> = new Map();
   private businessProfiles: Map<string, BusinessProfile> = new Map();
   private workerProfiles: Map<string, WorkerProfile> = new Map();
   private shifts: Map<string, Shift> = new Map();
   private notifications: Map<string, Notification> = new Map();
+  private transactions: Map<string, TransactionRecord> = new Map();
   private idCounter = 100;
   private notifCounter = 0;
 
@@ -273,6 +285,7 @@ class MockDatabase {
     shifts.forEach(s => this.shifts.set(s.id, s));
   }
 
+  // Notification operations
   createNotification(recipientId: string, message: string): Notification {
     const notification: Notification = {
       id: this.generateId('notif'),
@@ -309,6 +322,7 @@ class MockDatabase {
     });
   }
 
+  // User operations
   findUserByEmail(email: string): User | undefined {
     return Array.from(this.users.values()).find(u => u.email === email);
   }
@@ -329,6 +343,7 @@ class MockDatabase {
     return updated;
   }
 
+  // Business Profile operations
   getBusinessProfileByUserId(userId: string): BusinessProfile | undefined {
     return Array.from(this.businessProfiles.values()).find(bp => bp.user_id === userId);
   }
@@ -361,6 +376,7 @@ class MockDatabase {
     return updated;
   }
 
+  // Worker Profile operations
   getWorkerProfileByUserId(userId: string): WorkerProfile | undefined {
     return Array.from(this.workerProfiles.values()).find(wp => wp.user_id === userId);
   }
@@ -393,6 +409,7 @@ class MockDatabase {
     return updated;
   }
 
+  // GPS Check-In / Check-Out
   checkIn(shiftId: string, lat: number, lng: number): Shift | undefined {
     const shift = this.shifts.get(shiftId);
     if (!shift) return undefined;
@@ -405,10 +422,13 @@ class MockDatabase {
       updated_at: new Date().toISOString(),
     };
     this.shifts.set(shiftId, updated);
+
+    // Notify employer
     this.createNotification(
       shift.posted_by,
       `Worker checked in for "${shift.title}" at ${new Date().toLocaleTimeString()}.`
     );
+
     return updated;
   }
 
@@ -422,13 +442,17 @@ class MockDatabase {
       updated_at: new Date().toISOString(),
     };
     this.shifts.set(shiftId, updated);
+
+    // Notify employer
     this.createNotification(
       shift.posted_by,
       `Worker checked out of "${shift.title}" at ${new Date().toLocaleTimeString()}.`
     );
+
     return updated;
   }
 
+  // Background Check operations
   updateBackgroundStatus(workerId: string, status: BackgroundCheckStatus): WorkerProfile | undefined {
     const profile = Array.from(this.workerProfiles.values()).find(wp => wp.user_id === workerId);
     if (!profile) return undefined;
@@ -438,11 +462,14 @@ class MockDatabase {
       is_verified: status === 'passed' ? true : profile.is_verified,
     };
     this.workerProfiles.set(profile.id, updated);
+
+    // Notify worker
     if (status === 'passed') {
-      this.createNotification(workerId, 'Your background check has been approved! You are now verified.');
+      this.createNotification(workerId, '\u2705 Your background check has been approved! You are now verified.');
     } else if (status === 'failed') {
-      this.createNotification(workerId, 'Your background check was not approved. Please contact support.');
+      this.createNotification(workerId, '\u274c Your background check was not approved. Please contact support.');
     }
+
     return updated;
   }
 
@@ -450,6 +477,7 @@ class MockDatabase {
     return Array.from(this.workerProfiles.values()).filter(wp => wp.background_check_status === 'pending');
   }
 
+  // Admin operations
   verifyWorker(workerId: string): WorkerProfile | undefined {
     const profile = Array.from(this.workerProfiles.values()).find(wp => wp.user_id === workerId);
     if (!profile) return undefined;
@@ -480,6 +508,8 @@ class MockDatabase {
       updated_at: new Date().toISOString(),
     };
     this.shifts.set(shiftId, updated);
+
+    // Notify relevant parties
     if (shift.worker_id) {
       const msg = resolution === 'approve'
         ? `Dispute resolved: Your payout for "${shift.title}" has been approved.`
@@ -492,6 +522,7 @@ class MockDatabase {
         : `Dispute resolved: You have been refunded for "${shift.title}".`;
       this.createNotification(shift.posted_by, msg);
     }
+
     return updated;
   }
 
@@ -499,12 +530,15 @@ class MockDatabase {
     const allShifts = Array.from(this.shifts.values());
     const completedPaidShifts = allShifts.filter(s => s.status === 'completed' || s.status === 'paid');
     const disputedShifts = allShifts.filter(s => s.status === 'disputed');
+
     const calcPay = (shift: Shift): number => {
       const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / (1000 * 60 * 60);
       return shift.hourly_rate * hours;
     };
+
     const totalVolume = completedPaidShifts.reduce((sum, shift) => sum + calcPay(shift), 0);
     const totalFees = totalVolume * 0.10;
+
     return {
       totalVolume,
       totalFees,
@@ -522,6 +556,16 @@ class MockDatabase {
     return Array.from(this.workerProfiles.values());
   }
 
+  // Transaction operations
+  getTransactionByShiftId(shiftId: string): TransactionRecord | undefined {
+    return this.transactions.get(shiftId);
+  }
+
+  getAllTransactions(): TransactionRecord[] {
+    return Array.from(this.transactions.values());
+  }
+
+  // Shift operations
   createShift(data: Omit<Shift, 'id' | 'created_at' | 'updated_at'>): Shift {
     const now = new Date().toISOString();
     const shift: Shift = {
@@ -530,7 +574,28 @@ class MockDatabase {
       created_at: now,
       updated_at: now,
     };
+
+    // If Stripe is live, simulate creating a PaymentIntent for escrow
+    if (IS_STRIPE_LIVE) {
+      const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / (1000 * 60 * 60);
+      const estimatedAmount = shift.hourly_rate * hours;
+      shift.stripe_payment_intent_id = `pi_live_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+      // Create transaction record with platform fee
+      const platformFee = estimatedAmount * 0.10;
+      this.transactions.set(shift.id, {
+        shift_id: shift.id,
+        amount: estimatedAmount,
+        platform_fee: platformFee,
+        worker_payout: estimatedAmount - platformFee,
+        stripe_payment_intent_id: shift.stripe_payment_intent_id,
+        created_at: now,
+      });
+    }
+
     this.shifts.set(shift.id, shift);
+
+    // TRIGGER 1: Notify all workers about new gig
     const workers = Array.from(this.users.values()).filter(u => u.role === 'worker');
     workers.forEach(worker => {
       this.createNotification(
@@ -538,6 +603,7 @@ class MockDatabase {
         `New Gig Alert: A business is looking for a ${shift.title}!`
       );
     });
+
     return shift;
   }
 
@@ -580,22 +646,50 @@ class MockDatabase {
       updated_at: new Date().toISOString(),
     };
     this.shifts.set(shiftId, updated);
+
+    // TRIGGER 2: Notify business owner that shift was claimed
     this.createNotification(
       shift.posted_by,
       `Shift Filled! A worker has claimed your ${shift.title} slot.`
     );
+
     return updated;
   }
 
   releaseFunds(shiftId: string): Shift | undefined {
     const shift = this.shifts.get(shiftId);
     if (!shift || shift.status !== 'completed') return undefined;
+
+    const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / (1000 * 60 * 60);
+    const amount = shift.hourly_rate * hours;
+    const platformFee = amount * 0.10;
+    const workerPayout = amount - platformFee;
+
     const updated: Shift = {
       ...shift,
       status: 'paid',
       updated_at: new Date().toISOString(),
     };
+
+    // If Stripe is live, simulate a Transfer to the worker's connected account
+    if (IS_STRIPE_LIVE) {
+      updated.stripe_transfer_id = `tr_live_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+
     this.shifts.set(shiftId, updated);
+
+    // Create/update transaction record with fee breakdown
+    const existingTx = this.transactions.get(shiftId);
+    this.transactions.set(shiftId, {
+      shift_id: shiftId,
+      amount,
+      platform_fee: platformFee,
+      worker_payout: workerPayout,
+      stripe_payment_intent_id: existingTx?.stripe_payment_intent_id || shift.stripe_payment_intent_id,
+      stripe_transfer_id: updated.stripe_transfer_id,
+      created_at: existingTx?.created_at || new Date().toISOString(),
+    });
+
     return updated;
   }
 
@@ -623,12 +717,15 @@ class MockDatabase {
     const paidShifts = this.getPaidShiftsByWorkerId(workerId);
     const completedShifts = this.getCompletedShiftsByWorkerId(workerId);
     const allEarningShifts = [...completedShifts, ...paidShifts];
+
     const calcPay = (shift: Shift): number => {
       const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / (1000 * 60 * 60);
       return shift.hourly_rate * hours;
     };
+
     const totalEarned = allEarningShifts.reduce((sum, shift) => sum + calcPay(shift), 0);
     const pendingPayouts = completedShifts.reduce((sum, shift) => sum + calcPay(shift), 0);
+
     const history: ShiftWithBusiness[] = allEarningShifts
       .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
       .map(shift => {
@@ -640,6 +737,7 @@ class MockDatabase {
           estimated_total_pay: hours * shift.hourly_rate,
         };
       });
+
     return { totalEarned, pendingPayouts, history };
   }
 
@@ -661,6 +759,7 @@ class MockDatabase {
     });
   }
 
+  // Relational queries
   getShiftsWithBusiness(): (Shift & { business: BusinessProfile })[] {
     return Array.from(this.shifts.values()).map(shift => {
       const business = this.businessProfiles.get(shift.business_id)!;
@@ -710,9 +809,11 @@ class MockDatabase {
     this.workerProfiles.clear();
     this.shifts.clear();
     this.notifications.clear();
+    this.transactions.clear();
     this.idCounter = 100;
     this.seed();
   }
 }
 
+// Singleton instance
 export const db = new MockDatabase();

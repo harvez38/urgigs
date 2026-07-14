@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { db } from '../store/database';
+import { submitScreening } from '../services/verification';
 import { Header } from '../components/Header';
 import { BottomNav } from '../components/BottomNav';
 
 export function WorkerProfile() {
-  const { currentUser, workerProfile, updateWorkerProfile } = useAuthStore();
+  const { currentUser, workerProfile, updateWorkerProfile, refreshProfiles } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [skillsInput, setSkillsInput] = useState('');
   const [editedSkills, setEditedSkills] = useState<string[]>(workerProfile?.skills_tags || []);
   const [saved, setSaved] = useState(false);
+  const [submittingCheck, setSubmittingCheck] = useState(false);
 
   const handleAddSkill = () => {
     const trimmed = skillsInput.trim().toLowerCase();
@@ -35,6 +38,26 @@ export function WorkerProfile() {
       handleAddSkill();
     }
   };
+
+  const handleSubmitBackgroundCheck = async () => {
+    if (!currentUser) return;
+    setSubmittingCheck(true);
+    await submitScreening(currentUser.id);
+    db.updateBackgroundStatus(currentUser.id, 'pending');
+    refreshProfiles();
+    setSubmittingCheck(false);
+  };
+
+  const bgStatus = workerProfile?.background_check_status || 'unsubmitted';
+
+  const bgStatusConfig: Record<string, { label: string; color: string; icon: string }> = {
+    unsubmitted: { label: 'Not Submitted', color: 'text-surface-400', icon: '\u25cb' },
+    pending: { label: 'Pending Review', color: 'text-amber-400', icon: '\u23f3' },
+    passed: { label: 'Passed', color: 'text-success-400', icon: '\u2713' },
+    failed: { label: 'Failed', color: 'text-alert-400', icon: '\u2717' },
+  };
+
+  const statusInfo = bgStatusConfig[bgStatus];
 
   return (
     <div className="screen-container bg-surface-900 pb-20">
@@ -70,6 +93,62 @@ export function WorkerProfile() {
               <p className="text-[11px] text-surface-400">Rating</p>
             </div>
           </div>
+        </div>
+
+        {/* Background Check Status Card */}
+        <div className="bg-surface-800 rounded-2xl p-5 border border-surface-700 mb-5" data-testid="background-check-card">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-white">Background Check Status</h3>
+            <span className={`text-xs font-semibold ${statusInfo.color}`}>
+              {statusInfo.icon} {statusInfo.label}
+            </span>
+          </div>
+
+          {bgStatus === 'unsubmitted' && (
+            <div>
+              <p className="text-xs text-surface-400 mb-3">
+                Submit a background check to get verified and access more gigs.
+              </p>
+              <button
+                onClick={handleSubmitBackgroundCheck}
+                disabled={submittingCheck}
+                className="w-full py-3 bg-primary-500 text-surface-900 font-bold text-sm rounded-xl hover:bg-primary-400 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              >
+                {submittingCheck ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Submitting\u2026
+                  </>
+                ) : (
+                  'Submit Background Check'
+                )}
+              </button>
+            </div>
+          )}
+
+          {bgStatus === 'pending' && (
+            <p className="text-xs text-surface-400">
+              Your background check is being reviewed. This typically takes 1-3 business days.
+            </p>
+          )}
+
+          {bgStatus === 'passed' && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-success-500 bg-success-500/10 px-2.5 py-1 rounded-full">
+                \u2713 Verified Worker
+              </span>
+              <p className="text-xs text-surface-400">You're approved to accept all gig types.</p>
+            </div>
+          )}
+
+          {bgStatus === 'failed' && (
+            <p className="text-xs text-alert-400">
+              Your background check did not pass. Please contact support for more information.
+            </p>
+          )}
         </div>
 
         {/* Skills Section */}
