@@ -21,6 +21,7 @@ export interface BusinessProfile {
   state: string;
   zip_code: string;
   verified: boolean;
+  default_payment_method: string | null;
   created_at: string;
 }
 
@@ -35,6 +36,7 @@ export interface WorkerProfile {
   bio: string;
   rating: number;
   gigs_completed: number;
+  stripe_account_active: boolean;
   created_at: string;
 }
 
