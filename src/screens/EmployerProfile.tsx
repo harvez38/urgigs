@@ -1,16 +1,25 @@
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { saveCreditCard } from '../services/stripe';
 import { Header } from '../components/Header';
 import { BottomNav } from '../components/BottomNav';
 
 export function EmployerProfile() {
-  const { currentUser, businessProfile, updateBusinessProfile } = useAuthStore();
+  const { currentUser, businessProfile, updateBusinessProfile, refreshProfiles } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [companyName, setCompanyName] = useState(businessProfile?.company_name || '');
   const [city, setCity] = useState(businessProfile?.city || '');
   const [state, setState] = useState(businessProfile?.state || '');
   const [address, setAddress] = useState(businessProfile?.address || '');
   const [saved, setSaved] = useState(false);
+
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvc, setCardCvc] = useState('');
+  const [savingCard, setSavingCard] = useState(false);
+  const [cardSaved, setCardSaved] = useState(false);
 
   const handleSave = () => {
     updateBusinessProfile({
@@ -31,6 +40,26 @@ export function EmployerProfile() {
     setAddress(businessProfile?.address || '');
     setIsEditing(false);
   };
+
+  const handleSaveCard = async () => {
+    if (!businessProfile || !cardNumber || !cardExpiry || !cardCvc) return;
+    setSavingCard(true);
+    await saveCreditCard(businessProfile.id, {
+      number: cardNumber,
+      expiry: cardExpiry,
+      cvc: cardCvc,
+    });
+    refreshProfiles();
+    setSavingCard(false);
+    setShowPaymentModal(false);
+    setCardNumber('');
+    setCardExpiry('');
+    setCardCvc('');
+    setCardSaved(true);
+    setTimeout(() => setCardSaved(false), 2500);
+  };
+
+  const hasPaymentMethod = !!businessProfile?.default_payment_method;
 
   return (
     <div className="screen-container bg-surface-900 pb-20">
@@ -67,6 +96,50 @@ export function EmployerProfile() {
             \u2713 Profile updated successfully
           </div>
         )}
+
+        {cardSaved && (
+          <div className="bg-success-500/10 border border-success-500/30 text-success-500 text-sm font-medium px-4 py-3 rounded-xl mb-4">
+            \u2713 Payment method saved successfully
+          </div>
+        )}
+
+        {/* Payment Methods Section */}
+        <div className="bg-surface-800 rounded-2xl p-5 border border-surface-700 mb-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-white">Payment Methods</h3>
+          </div>
+
+          {hasPaymentMethod ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-surface-700 flex items-center justify-center">
+                  <span className="text-lg">\uD83D\uDCB3</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">**** **** **** 4242</p>
+                  <p className="text-xs text-surface-400">Visa \u00B7 Default</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-semibold text-[#22C55E] bg-[#22C55E]/10 px-2 py-0.5 rounded-full">
+                ACTIVE
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-surface-700 flex items-center justify-center">
+                <span className="text-lg">\uD83D\uDCB3</span>
+              </div>
+              <p className="text-sm text-surface-400">No payment method saved</p>
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowPaymentModal(true)}
+            className="mt-4 w-full py-3 bg-primary-500 text-surface-900 font-bold text-sm rounded-xl hover:bg-primary-400 transition-all"
+          >
+            {hasPaymentMethod ? 'Update Payment Method' : 'Add Payment Method'}
+          </button>
+        </div>
 
         {/* Business Info Section */}
         <div className="bg-surface-800 rounded-2xl p-5 border border-surface-700 mb-5">
@@ -181,6 +254,84 @@ export function EmployerProfile() {
           </div>
         </div>
       </div>
+
+      {/* Payment Method Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowPaymentModal(false)} />
+          <div className="relative w-full max-w-md bg-surface-800 rounded-t-3xl sm:rounded-3xl p-6 border border-surface-700 shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-white">Add Payment Method</h3>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-surface-400 hover:text-white"
+              >
+                \u2715
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Card Number</label>
+                <input
+                  type="text"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
+                  placeholder="4242 4242 4242 4242"
+                  maxLength={19}
+                  className="input-field"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Expiry</label>
+                  <input
+                    type="text"
+                    value={cardExpiry}
+                    onChange={(e) => setCardExpiry(e.target.value)}
+                    placeholder="MM/YY"
+                    maxLength={5}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-surface-300 mb-1.5 block">CVC</label>
+                  <input
+                    type="text"
+                    value={cardCvc}
+                    onChange={(e) => setCardCvc(e.target.value)}
+                    placeholder="123"
+                    maxLength={4}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSaveCard}
+              disabled={savingCard || !cardNumber || !cardExpiry || !cardCvc}
+              className="mt-6 w-full py-3.5 bg-primary-500 text-surface-900 font-bold text-sm rounded-xl hover:bg-primary-400 disabled:opacity-50 transition-all"
+            >
+              {savingCard ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Saving\u2026
+                </span>
+              ) : (
+                'Save Payment Method'
+              )}
+            </button>
+
+            <p className="text-[10px] text-surface-500 text-center mt-3">
+              \uD83D\uDD12 Secured by Stripe. Your card info is encrypted.
+            </p>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>
