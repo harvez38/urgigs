@@ -12,7 +12,7 @@ export interface User {
 
 export interface BusinessProfile {
   id: string;
-  user_id: string; // FK -> users.id
+  user_id: string;
   company_name: string;
   industry: string;
   description: string;
@@ -26,7 +26,7 @@ export interface BusinessProfile {
 
 export interface WorkerProfile {
   id: string;
-  user_id: string; // FK -> users.id
+  user_id: string;
   skills_tags: string[];
   hourly_rate_min: number;
   hourly_rate_max: number;
@@ -42,9 +42,9 @@ export type ShiftStatus = 'open' | 'assigned' | 'in_progress' | 'completed' | 'p
 
 export interface Shift {
   id: string;
-  business_id: string; // FK -> business_profiles.id
-  posted_by: string; // FK -> users.id
-  worker_id: string | null; // FK -> users.id (assigned worker)
+  business_id: string;
+  posted_by: string;
+  worker_id: string | null;
   title: string;
   description: string;
   category: string;
