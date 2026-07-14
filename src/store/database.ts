@@ -1,4 +1,4 @@
-import { User, BusinessProfile, WorkerProfile, Shift, Notification } from '../types';
+import { User, BusinessProfile, WorkerProfile, Shift, Notification, BackgroundCheckStatus } from '../types';
 
 export interface ShiftWithBusiness extends Shift {
   company_name: string;
@@ -9,6 +9,14 @@ export interface WorkerEarningsResult {
   totalEarned: number;
   pendingPayouts: number;
   history: ShiftWithBusiness[];
+}
+
+export interface AdminStats {
+  totalVolume: number;
+  totalFees: number;
+  totalShifts: number;
+  completedShifts: number;
+  disputedShifts: number;
 }
 
 class MockDatabase {
@@ -54,8 +62,21 @@ class MockDatabase {
       updated_at: '2026-07-12T09:15:00Z',
     };
 
+    const adminUser: User = {
+      id: 'usr_adm_001',
+      email: 'admin@urgigs.com',
+      password_hash: 'hashed_password_admin',
+      role: 'admin',
+      full_name: 'UrGigs Admin',
+      phone: '+1-555-0000',
+      avatar_url: null,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    };
+
     this.users.set(businessUser.id, businessUser);
     this.users.set(workerUser.id, workerUser);
+    this.users.set(adminUser.id, adminUser);
 
     const businessProfile: BusinessProfile = {
       id: 'biz_001',
@@ -87,10 +108,14 @@ class MockDatabase {
       rating: 4.8,
       gigs_completed: 47,
       stripe_account_active: false,
+      is_verified: false,
+      background_check_status: 'unsubmitted',
       created_at: '2026-02-20T10:30:00Z',
     };
 
     this.workerProfiles.set(workerProfile.id, workerProfile);
+
+    const today = new Date().toISOString().split('T')[0];
 
     const shifts: Shift[] = [
       {
@@ -111,6 +136,10 @@ class MockDatabase {
         slots_filled: 0,
         status: 'open',
         requirements: ['Bartending license', '2+ years experience'],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
         created_at: '2026-07-10T09:00:00Z',
         updated_at: '2026-07-10T09:00:00Z',
       },
@@ -132,6 +161,10 @@ class MockDatabase {
         slots_filled: 1,
         status: 'open',
         requirements: ['Physical fitness', 'Punctual'],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
         created_at: '2026-07-11T11:00:00Z',
         updated_at: '2026-07-11T11:00:00Z',
       },
@@ -144,8 +177,8 @@ class MockDatabase {
         description: 'Upscale wedding reception. Professional attire required. Experience with plated service preferred.',
         category: 'Catering',
         hourly_rate: 25,
-        start_time: '2026-07-25T15:00:00Z',
-        end_time: '2026-07-25T22:00:00Z',
+        start_time: `${today}T15:00:00Z`,
+        end_time: `${today}T22:00:00Z`,
         location: 'The Ritz-Carlton',
         city: 'San Francisco',
         state: 'CA',
@@ -153,6 +186,10 @@ class MockDatabase {
         slots_filled: 3,
         status: 'assigned',
         requirements: ['Food handler cert', 'Professional appearance'],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
         created_at: '2026-07-12T08:00:00Z',
         updated_at: '2026-07-13T10:00:00Z',
       },
@@ -174,6 +211,10 @@ class MockDatabase {
         slots_filled: 2,
         status: 'paid',
         requirements: ['Bartending license'],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
         created_at: '2026-06-10T09:00:00Z',
         updated_at: '2026-06-17T08:00:00Z',
       },
@@ -195,6 +236,10 @@ class MockDatabase {
         slots_filled: 3,
         status: 'paid',
         requirements: ['Physical fitness'],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
         created_at: '2026-06-25T10:00:00Z',
         updated_at: '2026-06-30T09:00:00Z',
       },
@@ -216,6 +261,10 @@ class MockDatabase {
         slots_filled: 2,
         status: 'completed',
         requirements: ['Fine dining experience'],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
         created_at: '2026-06-28T08:00:00Z',
         updated_at: '2026-07-02T08:00:00Z',
       },
@@ -224,7 +273,6 @@ class MockDatabase {
     shifts.forEach(s => this.shifts.set(s.id, s));
   }
 
-  // Notification operations
   createNotification(recipientId: string, message: string): Notification {
     const notification: Notification = {
       id: this.generateId('notif'),
@@ -261,7 +309,6 @@ class MockDatabase {
     });
   }
 
-  // User operations
   findUserByEmail(email: string): User | undefined {
     return Array.from(this.users.values()).find(u => u.email === email);
   }
@@ -282,7 +329,6 @@ class MockDatabase {
     return updated;
   }
 
-  // Business Profile operations
   getBusinessProfileByUserId(userId: string): BusinessProfile | undefined {
     return Array.from(this.businessProfiles.values()).find(bp => bp.user_id === userId);
   }
@@ -315,7 +361,6 @@ class MockDatabase {
     return updated;
   }
 
-  // Worker Profile operations
   getWorkerProfileByUserId(userId: string): WorkerProfile | undefined {
     return Array.from(this.workerProfiles.values()).find(wp => wp.user_id === userId);
   }
@@ -348,7 +393,135 @@ class MockDatabase {
     return updated;
   }
 
-  // Shift operations
+  checkIn(shiftId: string, lat: number, lng: number): Shift | undefined {
+    const shift = this.shifts.get(shiftId);
+    if (!shift) return undefined;
+    const updated: Shift = {
+      ...shift,
+      status: 'in_progress',
+      check_in_time: new Date().toISOString(),
+      actual_lat: lat,
+      actual_lng: lng,
+      updated_at: new Date().toISOString(),
+    };
+    this.shifts.set(shiftId, updated);
+    this.createNotification(
+      shift.posted_by,
+      `Worker checked in for "${shift.title}" at ${new Date().toLocaleTimeString()}.`
+    );
+    return updated;
+  }
+
+  checkOut(shiftId: string): Shift | undefined {
+    const shift = this.shifts.get(shiftId);
+    if (!shift) return undefined;
+    const updated: Shift = {
+      ...shift,
+      status: 'completed',
+      check_out_time: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    this.shifts.set(shiftId, updated);
+    this.createNotification(
+      shift.posted_by,
+      `Worker checked out of "${shift.title}" at ${new Date().toLocaleTimeString()}.`
+    );
+    return updated;
+  }
+
+  updateBackgroundStatus(workerId: string, status: BackgroundCheckStatus): WorkerProfile | undefined {
+    const profile = Array.from(this.workerProfiles.values()).find(wp => wp.user_id === workerId);
+    if (!profile) return undefined;
+    const updated: WorkerProfile = {
+      ...profile,
+      background_check_status: status,
+      is_verified: status === 'passed' ? true : profile.is_verified,
+    };
+    this.workerProfiles.set(profile.id, updated);
+    if (status === 'passed') {
+      this.createNotification(workerId, 'Your background check has been approved! You are now verified.');
+    } else if (status === 'failed') {
+      this.createNotification(workerId, 'Your background check was not approved. Please contact support.');
+    }
+    return updated;
+  }
+
+  getPendingBackgroundChecks(): WorkerProfile[] {
+    return Array.from(this.workerProfiles.values()).filter(wp => wp.background_check_status === 'pending');
+  }
+
+  verifyWorker(workerId: string): WorkerProfile | undefined {
+    const profile = Array.from(this.workerProfiles.values()).find(wp => wp.user_id === workerId);
+    if (!profile) return undefined;
+    const updated = { ...profile, is_verified: true };
+    this.workerProfiles.set(profile.id, updated);
+    return updated;
+  }
+
+  disputeShift(shiftId: string): Shift | undefined {
+    const shift = this.shifts.get(shiftId);
+    if (!shift) return undefined;
+    const updated: Shift = {
+      ...shift,
+      status: 'disputed',
+      updated_at: new Date().toISOString(),
+    };
+    this.shifts.set(shiftId, updated);
+    return updated;
+  }
+
+  resolveDispute(shiftId: string, resolution: 'approve' | 'refund'): Shift | undefined {
+    const shift = this.shifts.get(shiftId);
+    if (!shift || shift.status !== 'disputed') return undefined;
+    const newStatus = resolution === 'approve' ? 'completed' : 'cancelled';
+    const updated: Shift = {
+      ...shift,
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+    };
+    this.shifts.set(shiftId, updated);
+    if (shift.worker_id) {
+      const msg = resolution === 'approve'
+        ? `Dispute resolved: Your payout for "${shift.title}" has been approved.`
+        : `Dispute resolved: The shift "${shift.title}" has been cancelled and employer refunded.`;
+      this.createNotification(shift.worker_id, msg);
+    }
+    if (shift.posted_by) {
+      const msg = resolution === 'approve'
+        ? `Dispute resolved: Worker payout for "${shift.title}" has been approved.`
+        : `Dispute resolved: You have been refunded for "${shift.title}".`;
+      this.createNotification(shift.posted_by, msg);
+    }
+    return updated;
+  }
+
+  getAdminStats(): AdminStats {
+    const allShifts = Array.from(this.shifts.values());
+    const completedPaidShifts = allShifts.filter(s => s.status === 'completed' || s.status === 'paid');
+    const disputedShifts = allShifts.filter(s => s.status === 'disputed');
+    const calcPay = (shift: Shift): number => {
+      const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / (1000 * 60 * 60);
+      return shift.hourly_rate * hours;
+    };
+    const totalVolume = completedPaidShifts.reduce((sum, shift) => sum + calcPay(shift), 0);
+    const totalFees = totalVolume * 0.10;
+    return {
+      totalVolume,
+      totalFees,
+      totalShifts: allShifts.length,
+      completedShifts: completedPaidShifts.length,
+      disputedShifts: disputedShifts.length,
+    };
+  }
+
+  getDisputedShifts(): Shift[] {
+    return Array.from(this.shifts.values()).filter(s => s.status === 'disputed');
+  }
+
+  getAllWorkerProfiles(): WorkerProfile[] {
+    return Array.from(this.workerProfiles.values());
+  }
+
   createShift(data: Omit<Shift, 'id' | 'created_at' | 'updated_at'>): Shift {
     const now = new Date().toISOString();
     const shift: Shift = {
@@ -358,8 +531,6 @@ class MockDatabase {
       updated_at: now,
     };
     this.shifts.set(shift.id, shift);
-
-    // TRIGGER 1: Notify all workers about new gig
     const workers = Array.from(this.users.values()).filter(u => u.role === 'worker');
     workers.forEach(worker => {
       this.createNotification(
@@ -367,7 +538,6 @@ class MockDatabase {
         `New Gig Alert: A business is looking for a ${shift.title}!`
       );
     });
-
     return shift;
   }
 
@@ -410,13 +580,10 @@ class MockDatabase {
       updated_at: new Date().toISOString(),
     };
     this.shifts.set(shiftId, updated);
-
-    // TRIGGER 2: Notify business owner that shift was claimed
     this.createNotification(
       shift.posted_by,
       `Shift Filled! A worker has claimed your ${shift.title} slot.`
     );
-
     return updated;
   }
 
@@ -440,6 +607,10 @@ class MockDatabase {
     return Array.from(this.shifts.values()).filter(s => s.worker_id === workerId && s.status === 'assigned');
   }
 
+  getInProgressShiftsByWorkerId(workerId: string): Shift[] {
+    return Array.from(this.shifts.values()).filter(s => s.worker_id === workerId && s.status === 'in_progress');
+  }
+
   getPaidShiftsByWorkerId(workerId: string): Shift[] {
     return Array.from(this.shifts.values()).filter(s => s.worker_id === workerId && s.status === 'paid');
   }
@@ -452,15 +623,12 @@ class MockDatabase {
     const paidShifts = this.getPaidShiftsByWorkerId(workerId);
     const completedShifts = this.getCompletedShiftsByWorkerId(workerId);
     const allEarningShifts = [...completedShifts, ...paidShifts];
-
     const calcPay = (shift: Shift): number => {
       const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / (1000 * 60 * 60);
       return shift.hourly_rate * hours;
     };
-
     const totalEarned = allEarningShifts.reduce((sum, shift) => sum + calcPay(shift), 0);
     const pendingPayouts = completedShifts.reduce((sum, shift) => sum + calcPay(shift), 0);
-
     const history: ShiftWithBusiness[] = allEarningShifts
       .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
       .map(shift => {
@@ -472,7 +640,6 @@ class MockDatabase {
           estimated_total_pay: hours * shift.hourly_rate,
         };
       });
-
     return { totalEarned, pendingPayouts, history };
   }
 
@@ -494,7 +661,6 @@ class MockDatabase {
     });
   }
 
-  // Relational queries
   getShiftsWithBusiness(): (Shift & { business: BusinessProfile })[] {
     return Array.from(this.shifts.values()).map(shift => {
       const business = this.businessProfiles.get(shift.business_id)!;
@@ -549,5 +715,4 @@ class MockDatabase {
   }
 }
 
-// Singleton instance
 export const db = new MockDatabase();
