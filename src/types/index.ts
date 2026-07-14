@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   password_hash: string;
-  role: 'business' | 'worker';
+  role: 'business' | 'worker' | 'admin';
   full_name: string;
   phone: string;
   avatar_url: string | null;
@@ -26,6 +26,8 @@ export interface BusinessProfile {
   created_at: string;
 }
 
+export type BackgroundCheckStatus = 'unsubmitted' | 'pending' | 'passed' | 'failed';
+
 export interface WorkerProfile {
   id: string;
   user_id: string; // FK -> users.id
@@ -38,10 +40,12 @@ export interface WorkerProfile {
   rating: number;
   gigs_completed: number;
   stripe_account_active: boolean;
+  is_verified: boolean;
+  background_check_status: BackgroundCheckStatus;
   created_at: string;
 }
 
-export type ShiftStatus = 'open' | 'assigned' | 'in_progress' | 'completed' | 'paid' | 'cancelled';
+export type ShiftStatus = 'open' | 'assigned' | 'in_progress' | 'completed' | 'paid' | 'cancelled' | 'disputed';
 
 export interface Shift {
   id: string;
@@ -61,6 +65,10 @@ export interface Shift {
   slots_filled: number;
   status: ShiftStatus;
   requirements: string[];
+  check_in_time: string | null;
+  check_out_time: string | null;
+  actual_lat: number | null;
+  actual_lng: number | null;
   created_at: string;
   updated_at: string;
 }

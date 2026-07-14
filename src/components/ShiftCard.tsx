@@ -8,11 +8,12 @@ interface ShiftCardProps {
   displayBadge?: string;
   onClaim?: (shiftId: string) => void;
   onApprovePayment?: (shiftId: string) => void;
+  onDispute?: (shiftId: string) => void;
   onClick?: (shiftId: string) => void;
   claimed?: boolean;
 }
 
-export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, displayBadge, onClaim, onApprovePayment, onClick, claimed }: ShiftCardProps) {
+export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, displayBadge, onClaim, onApprovePayment, onDispute, onClick, claimed }: ShiftCardProps) {
   const startDate = new Date(shift.start_time);
   const endDate = new Date(shift.end_time);
   const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
@@ -20,6 +21,7 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
   const getStatusBadge = (): string => {
     if (displayBadge) return displayBadge;
     if (shift.status === 'completed') return 'COMPLETED / PENDING PAYOUT';
+    if (shift.status === 'disputed') return 'DISPUTED';
     return shift.status.replace('_', ' ').toUpperCase();
   };
 
@@ -33,11 +35,14 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
     completed: 'bg-amber-50 text-amber-700 border-amber-200',
     paid: 'bg-success-100 text-success-700 border-success-300',
     cancelled: 'bg-alert-50 text-alert-700 border-alert-200',
+    disputed: 'bg-red-100 text-red-700 border-red-300',
   };
 
   const badgeColorKey = displayBadge === 'UPCOMING' ? 'upcoming' : shift.status;
 
   const totalPay = estimatedTotalPay ?? duration * shift.hourly_rate;
+
+  const canDispute = ['assigned', 'in_progress', 'completed'].includes(shift.status) && onDispute;
 
   return (
     <div
@@ -115,26 +120,46 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
               Approve for Payment
             </button>
           )}
+          {canDispute && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDispute(shift.id); }}
+              className="mt-2 w-full text-xs font-semibold text-alert-500 bg-alert-500/10 border border-alert-500/30 px-4 py-2 rounded-xl hover:bg-alert-500/20 transition-colors active:scale-95"
+              aria-label="Flag dispute"
+            >
+              🚩 Flag Dispute
+            </button>
+          )}
         </div>
       )}
 
       {variant === 'worker' && (
-        <div className="mt-3 pt-3 border-t border-surface-200 flex items-center justify-between">
-          <span className="text-xs text-surface-500">
-            {shift.status === 'open' ? `${shift.slots_total - shift.slots_filled} spots left` : 'Shift claimed'}
-          </span>
-          {claimed ? (
-            <span className="text-xs font-semibold text-success-600 bg-success-50 px-3 py-1.5 rounded-lg">
-              ✓ Claimed
+        <div className="mt-3 pt-3 border-t border-surface-200">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-surface-500">
+              {shift.status === 'open' ? `${shift.slots_total - shift.slots_filled} spots left` : 'Shift claimed'}
             </span>
-          ) : shift.status === 'open' ? (
+            {claimed ? (
+              <span className="text-xs font-semibold text-success-600 bg-success-50 px-3 py-1.5 rounded-lg">
+                ✓ Claimed
+              </span>
+            ) : shift.status === 'open' ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); onClaim?.(shift.id); }}
+                className="text-xs font-bold text-surface-900 bg-primary-500 px-4 py-1.5 rounded-lg hover:bg-primary-400 transition-colors active:scale-95"
+              >
+                Claim Shift
+              </button>
+            ) : null}
+          </div>
+          {canDispute && (
             <button
-              onClick={(e) => { e.stopPropagation(); onClaim?.(shift.id); }}
-              className="text-xs font-bold text-surface-900 bg-primary-500 px-4 py-1.5 rounded-lg hover:bg-primary-400 transition-colors active:scale-95"
+              onClick={(e) => { e.stopPropagation(); onDispute(shift.id); }}
+              className="mt-2 w-full text-xs font-semibold text-alert-500 bg-alert-500/10 border border-alert-500/30 px-4 py-2 rounded-xl hover:bg-alert-500/20 transition-colors active:scale-95"
+              aria-label="Flag dispute"
             >
-              Claim Shift
+              🚩 Flag Dispute
             </button>
-          ) : null}
+          )}
         </div>
       )}
     </div>

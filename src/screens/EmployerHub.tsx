@@ -19,7 +19,7 @@ export function EmployerHub() {
   );
 
   const activeGigs = shifts.filter(s => ['open', 'assigned', 'in_progress'].includes(s.status));
-  const pastGigs = shifts.filter(s => ['completed', 'paid', 'cancelled'].includes(s.status));
+  const pastGigs = shifts.filter(s => ['completed', 'paid', 'cancelled', 'disputed'].includes(s.status));
   const manageShifts = shifts.filter(s => s.status === 'assigned');
 
   const displayedShifts = gigView === 'active' ? activeGigs : gigView === 'past' ? pastGigs : manageShifts;
@@ -56,6 +56,11 @@ export function EmployerHub() {
     if (updated) {
       setShifts(currentUser ? db.getShiftsByPosterId(currentUser.id) : []);
     }
+  };
+
+  const handleDispute = (shiftId: string) => {
+    db.disputeShift(shiftId);
+    setShifts(currentUser ? db.getShiftsByPosterId(currentUser.id) : []);
   };
 
   return (
@@ -160,6 +165,7 @@ export function EmployerHub() {
                 shift={shift}
                 variant="employer"
                 onApprovePayment={gigView === 'manage' ? handleApproveForPayment : undefined}
+                onDispute={handleDispute}
               />
             ))}
           </div>

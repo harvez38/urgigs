@@ -7,8 +7,9 @@ import { EmployerProfile } from './screens/EmployerProfile';
 import { WorkerFindGigs } from './screens/WorkerFindGigs';
 import { WorkerEarnings } from './screens/WorkerEarnings';
 import { WorkerProfile } from './screens/WorkerProfile';
+import { AdminDashboard } from './screens/AdminDashboard';
 
-function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; allowedRole: 'business' | 'worker' }) {
+function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; allowedRole: 'business' | 'worker' | 'admin' }) {
   const { isAuthenticated, currentUser } = useAuthStore();
   
   if (!isAuthenticated) {
@@ -16,7 +17,7 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; 
   }
   
   if (currentUser?.role !== allowedRole) {
-    const redirectPath = currentUser?.role === 'business' ? '/employer' : '/worker';
+    const redirectPath = currentUser?.role === 'admin' ? '/admin' : currentUser?.role === 'business' ? '/employer' : '/worker';
     return <Navigate to={redirectPath} replace />;
   }
   
@@ -27,6 +28,7 @@ function AuthRedirect() {
   const { isAuthenticated, currentUser } = useAuthStore();
   
   if (isAuthenticated) {
+    if (currentUser?.role === 'admin') return <Navigate to="/admin" replace />;
     return <Navigate to={currentUser?.role === 'business' ? '/employer' : '/worker'} replace />;
   }
   
@@ -39,6 +41,16 @@ function App() {
       <Routes>
         <Route path="/" element={<AuthRedirect />} />
         
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Employer Routes */}
         <Route
           path="/employer"
