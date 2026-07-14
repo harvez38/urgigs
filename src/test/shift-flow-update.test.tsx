@@ -23,14 +23,14 @@ describe('Shift-Creation Flow Updates', () => {
       expect(screen.getByText('+ Post a New Shift')).toBeDefined();
     });
 
-    it('should show "Active Open Postings" toggle tab', () => {
+    it('should show "Active" toggle tab', () => {
       loginAsEmployer();
       render(
         <MemoryRouter>
           <EmployerHub />
         </MemoryRouter>
       );
-      expect(screen.getByText(/Active Open Postings/)).toBeDefined();
+      expect(screen.getByText(/Active \(/)).toBeDefined();
     });
 
     it('should not contain old "Active Gigs" label', () => {
@@ -189,10 +189,10 @@ describe('Shift-Creation Flow Updates', () => {
       expect(screen.getByText('IN PROGRESS')).toBeDefined();
     });
 
-    it('should display "COMPLETED" badge in uppercase', () => {
+    it('should display "COMPLETED / PENDING PAYOUT" badge for completed status', () => {
       const completedShift = { ...baseShift, status: 'completed' as const, worker_id: 'worker-1' };
       render(<ShiftCard shift={completedShift} variant="employer" />);
-      expect(screen.getByText('COMPLETED')).toBeDefined();
+      expect(screen.getByText('COMPLETED / PENDING PAYOUT')).toBeDefined();
     });
 
     it('should display "CANCELLED" badge in uppercase', () => {
@@ -216,7 +216,7 @@ describe('Shift-Creation Flow Updates', () => {
       expect(screen.getByText('Publish Shift')).toBeDefined();
     });
 
-    it('should create a shift and display it with OPEN badge in Active Open Postings', () => {
+    it('should create a shift and display it with OPEN badge in Active tab', () => {
       loginAsEmployer();
       render(
         <MemoryRouter>
@@ -250,7 +250,7 @@ describe('Shift-Creation Flow Updates', () => {
       // Multiple OPEN badges may exist (from seeded data + new shift)
       const openBadges = screen.getAllByText('OPEN');
       expect(openBadges.length).toBeGreaterThan(0);
-      expect(screen.getByText(/Active Open Postings/)).toBeDefined();
+      expect(screen.getByText(/Active \(/)).toBeDefined();
     });
   });
 });

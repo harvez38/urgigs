@@ -37,55 +37,76 @@ describe('Phase 2 UI Components', () => {
       );
       const claimButton = screen.getAllByText('Claim Shift')[0];
       fireEvent.click(claimButton);
-      expect(screen.getByText('\u2713 Claimed')).toBeDefined();
+      expect(screen.getByText('✓ Claimed')).toBeDefined();
     });
   });
 
-  describe('Employer Hub - Active/Past Toggle', () => {
-    it('should render Active Gigs and Past Gigs tabs', () => {
+  describe('Employer Hub - Active/Past/Manage Toggle', () => {
+    it('should render Active, Past, and Manage Shifts tabs', () => {
       loginAsEmployer();
       render(
         <MemoryRouter>
           <EmployerHub />
         </MemoryRouter>
       );
-      expect(screen.getByText(/Active Gigs/)).toBeDefined();
-      expect(screen.getByText(/Past Gigs/)).toBeDefined();
+      expect(screen.getByText(/Active \(/)).toBeDefined();
+      expect(screen.getByText(/Past \(/)).toBeDefined();
+      expect(screen.getByText(/Manage Shifts \(/)).toBeDefined();
     });
 
-    it('should show Post Shift button', () => {
+    it('should show Post a New Shift button', () => {
       loginAsEmployer();
       render(
         <MemoryRouter>
           <EmployerHub />
         </MemoryRouter>
       );
-      expect(screen.getByText('+ Post Shift')).toBeDefined();
+      expect(screen.getByText('+ Post a New Shift')).toBeDefined();
     });
   });
 
-  describe('Worker Earnings', () => {
-    it('should display total earnings', () => {
+  describe('Wallet & Earnings', () => {
+    it('should display total lifetime earnings', () => {
       loginAsWorker();
       render(
         <MemoryRouter>
           <WorkerEarnings />
         </MemoryRouter>
       );
-      expect(screen.getByText('My Earnings')).toBeDefined();
-      expect(screen.getByText('Total Earned')).toBeDefined();
+      expect(screen.getByText('Wallet & Earnings')).toBeDefined();
+      expect(screen.getByText('Total Lifetime Earnings')).toBeDefined();
     });
 
-    it('should show payment history for paid shifts', () => {
+    it('should show earnings ledger with paid and completed shifts', () => {
       loginAsWorker();
       render(
         <MemoryRouter>
           <WorkerEarnings />
         </MemoryRouter>
       );
-      expect(screen.getByText('Payment History')).toBeDefined();
+      expect(screen.getByText('Earnings Ledger')).toBeDefined();
       const paidBadges = screen.getAllByText('PAID');
       expect(paidBadges.length).toBeGreaterThan(0);
+    });
+
+    it('should show pending payout badge for completed shifts', () => {
+      loginAsWorker();
+      render(
+        <MemoryRouter>
+          <WorkerEarnings />
+        </MemoryRouter>
+      );
+      expect(screen.getByText('COMPLETED / PENDING PAYOUT')).toBeDefined();
+    });
+
+    it('should show pending payouts section', () => {
+      loginAsWorker();
+      render(
+        <MemoryRouter>
+          <WorkerEarnings />
+        </MemoryRouter>
+      );
+      expect(screen.getByText('Pending Payouts')).toBeDefined();
     });
   });
 
@@ -101,7 +122,7 @@ describe('Phase 2 UI Components', () => {
       render(
         <PostShiftModal isOpen={true} onClose={() => {}} onSubmit={() => {}} />
       );
-      expect(screen.getByText('Post a Shift')).toBeDefined();
+      expect(screen.getByText('Post a New Shift')).toBeDefined();
       expect(screen.getByPlaceholderText('e.g., Bartender, Event Setup')).toBeDefined();
       expect(screen.getByPlaceholderText('Describe what the worker will be doing...')).toBeDefined();
     });
@@ -110,7 +131,7 @@ describe('Phase 2 UI Components', () => {
       render(
         <PostShiftModal isOpen={true} onClose={() => {}} onSubmit={() => {}} />
       );
-      const submitBtn = screen.getByText('Post Shift');
+      const submitBtn = screen.getByText('Publish Shift');
       fireEvent.click(submitBtn);
       expect(screen.getByText('Role title is required')).toBeDefined();
       expect(screen.getByText('Description is required')).toBeDefined();

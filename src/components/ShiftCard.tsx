@@ -7,23 +7,30 @@ interface ShiftCardProps {
   estimatedTotalPay?: number;
   displayBadge?: string;
   onClaim?: (shiftId: string) => void;
+  onApprovePayment?: (shiftId: string) => void;
   onClick?: (shiftId: string) => void;
   claimed?: boolean;
 }
 
-export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, displayBadge, onClaim, onClick, claimed }: ShiftCardProps) {
+export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, displayBadge, onClaim, onApprovePayment, onClick, claimed }: ShiftCardProps) {
   const startDate = new Date(shift.start_time);
   const endDate = new Date(shift.end_time);
   const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
 
-  const badgeLabel = displayBadge ?? shift.status.replace('_', ' ').toUpperCase();
+  const getStatusBadge = (): string => {
+    if (displayBadge) return displayBadge;
+    if (shift.status === 'completed') return 'COMPLETED / PENDING PAYOUT';
+    return shift.status.replace('_', ' ').toUpperCase();
+  };
+
+  const badgeLabel = getStatusBadge();
 
   const statusColors: Record<string, string> = {
     open: 'bg-success-50 text-success-700 border-success-200',
     assigned: 'bg-primary-50 text-primary-700 border-primary-200',
     upcoming: 'bg-amber-50 text-amber-700 border-amber-200',
     in_progress: 'bg-amber-50 text-amber-700 border-amber-200',
-    completed: 'bg-surface-200 text-surface-600 border-surface-300',
+    completed: 'bg-amber-50 text-amber-700 border-amber-200',
     paid: 'bg-success-100 text-success-700 border-success-300',
     cancelled: 'bg-alert-50 text-alert-700 border-alert-200',
   };
@@ -65,10 +72,10 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
       <div className="flex items-center justify-between pt-3 border-t border-surface-200">
         <div className="flex items-center gap-3 text-xs text-surface-500">
           <span className="flex items-center gap-1">
-            \ud83d\udccd {shift.city}
+            📍 {shift.city}
           </span>
           <span className="flex items-center gap-1">
-            \ud83d\udd50 {duration}h
+            🕐 {duration}h
           </span>
         </div>
         <div className="text-right">
@@ -80,7 +87,7 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
       {/* Estimated Total Pay */}
       <div className="mt-2 flex items-center justify-between">
         <span className="text-[11px] text-surface-400">
-          {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} \u00b7 {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} \u2013 {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+          {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} – {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
         </span>
         <span className="text-xs font-bold text-success-600">
           Est. ${totalPay.toFixed(0)}
@@ -100,6 +107,14 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
               />
             </div>
           </div>
+          {shift.status === 'assigned' && onApprovePayment && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onApprovePayment(shift.id); }}
+              className="mt-3 w-full text-sm font-bold text-surface-900 bg-primary-500 px-4 py-2.5 rounded-xl hover:bg-primary-400 transition-colors active:scale-95"
+            >
+              Approve for Payment
+            </button>
+          )}
         </div>
       )}
 
@@ -110,7 +125,7 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
           </span>
           {claimed ? (
             <span className="text-xs font-semibold text-success-600 bg-success-50 px-3 py-1.5 rounded-lg">
-              \u2713 Claimed
+              ✓ Claimed
             </span>
           ) : shift.status === 'open' ? (
             <button

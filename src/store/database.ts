@@ -5,6 +5,12 @@ export interface ShiftWithBusiness extends Shift {
   estimated_total_pay: number;
 }
 
+export interface WorkerEarningsResult {
+  totalEarned: number;
+  pendingPayouts: number;
+  history: ShiftWithBusiness[];
+}
+
 class MockDatabase {
   private users: Map<string, User> = new Map();
   private businessProfiles: Map<string, BusinessProfile> = new Map();
@@ -391,13 +397,54 @@ class MockDatabase {
     return Array.from(this.shifts.values()).filter(s => s.worker_id === workerId && s.status === 'paid');
   }
 
-  getWorkerEarnings(workerId: string): { total: number; shifts: Shift[] } {
+  getCompletedShiftsByWorkerId(workerId: string): Shift[] {
+    return Array.from(this.shifts.values()).filter(s => s.worker_id === workerId && s.status === 'completed');
+  }
+
+  getWorkerEarnings(workerId: string): WorkerEarningsResult {
     const paidShifts = this.getPaidShiftsByWorkerId(workerId);
-    const total = paidShifts.reduce((sum, shift) => {
+    const completedShifts = this.getCompletedShiftsByWorkerId(workerId);
+    const allEarningShifts = [...completedShifts, ...paidShifts];
+
+    const calcPay = (shift: Shift): number => {
       const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / (1000 * 60 * 60);
-      return sum + (shift.hourly_rate * hours);
-    }, 0);
-    return { total, shifts: paidShifts };
+      return shift.hourly_rate * hours;
+    };
+
+    const totalEarned = allEarningShifts.reduce((sum, shift) => sum + calcPay(shift), 0);
+    const pendingPayouts = completedShifts.reduce((sum, shift) => sum + calcPay(shift), 0);
+
+    const history: ShiftWithBusiness[] = allEarningShifts
+      .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
+      .map(shift => {
+        const business = this.businessProfiles.get(shift.business_id);
+        const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / 3600000;
+        return {
+          ...shift,
+          company_name: business?.company_name ?? 'Unknown Company',
+          estimated_total_pay: hours * shift.hourly_rate,
+        };
+      });
+
+    return { totalEarned, pendingPayouts, history };
+  }
+
+  getShiftsByEmployerAndStatus(employerUserId: string, status: string): Shift[] {
+    return Array.from(this.shifts.values()).filter(
+      s => s.posted_by === employerUserId && s.status === status
+    );
+  }
+
+  getShiftsByEmployerAndStatusWithBusiness(employerUserId: string, status: string): ShiftWithBusiness[] {
+    return this.getShiftsByEmployerAndStatus(employerUserId, status).map(shift => {
+      const business = this.businessProfiles.get(shift.business_id);
+      const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / 3600000;
+      return {
+        ...shift,
+        company_name: business?.company_name ?? 'Unknown Company',
+        estimated_total_pay: hours * shift.hourly_rate,
+      };
+    });
   }
 
   // Relational queries

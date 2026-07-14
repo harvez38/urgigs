@@ -82,12 +82,12 @@ describe('Phase 2 - Database Operations', () => {
   });
 
   describe('Worker Earnings', () => {
-    it('should calculate earnings from paid shifts', () => {
+    it('should calculate earnings from completed and paid shifts', () => {
       const earnings = db.getWorkerEarnings('usr_wrk_001');
-      expect(earnings.total).toBeGreaterThan(0);
-      expect(earnings.shifts.length).toBeGreaterThan(0);
-      earnings.shifts.forEach(s => {
-        expect(s.status).toBe('paid');
+      expect(earnings.totalEarned).toBeGreaterThan(0);
+      expect(earnings.history.length).toBeGreaterThan(0);
+      earnings.history.forEach(s => {
+        expect(['completed', 'paid']).toContain(s.status);
         expect(s.worker_id).toBe('usr_wrk_001');
       });
     });
@@ -95,17 +95,17 @@ describe('Phase 2 - Database Operations', () => {
     it('should calculate correct total from hourly_rate * hours', () => {
       const earnings = db.getWorkerEarnings('usr_wrk_001');
       let expectedTotal = 0;
-      earnings.shifts.forEach(shift => {
+      earnings.history.forEach(shift => {
         const hours = (new Date(shift.end_time).getTime() - new Date(shift.start_time).getTime()) / (1000 * 60 * 60);
         expectedTotal += shift.hourly_rate * hours;
       });
-      expect(earnings.total).toBe(expectedTotal);
+      expect(earnings.totalEarned).toBe(expectedTotal);
     });
 
-    it('should return zero for a worker with no paid shifts', () => {
+    it('should return zero for a worker with no completed or paid shifts', () => {
       const earnings = db.getWorkerEarnings('usr_biz_001');
-      expect(earnings.total).toBe(0);
-      expect(earnings.shifts.length).toBe(0);
+      expect(earnings.totalEarned).toBe(0);
+      expect(earnings.history.length).toBe(0);
     });
   });
 
