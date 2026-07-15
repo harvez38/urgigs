@@ -6,6 +6,7 @@ import { BottomNav } from '../components/BottomNav';
 import { EmptyState } from '../components/EmptyState';
 import { ShiftCard } from '../components/ShiftCard';
 import { PostShiftModal } from '../components/PostShiftModal';
+import { RatingModal } from '../components/RatingModal';
 import { Shift } from '../types';
 
 type GigView = 'active' | 'past' | 'manage';
@@ -17,6 +18,14 @@ export function EmployerHub() {
   const [shifts, setShifts] = useState<Shift[]>(() =>
     currentUser ? db.getShiftsByPosterId(currentUser.id) : []
   );
+
+  // Rating modal state
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingShift, setRatingShift] = useState<Shift | null>(null);
+
+  const unreviewedShifts = currentUser
+    ? db.getUnreviewedPaidShifts(currentUser.id, 'business')
+    : [];
 
   const activeGigs = shifts.filter(s => ['open', 'assigned', 'in_progress'].includes(s.status));
   const pastGigs = shifts.filter(s => ['completed', 'paid', 'cancelled', 'disputed'].includes(s.status));
@@ -44,6 +53,10 @@ export function EmployerHub() {
       slots_filled: 0,
       status: 'open',
       requirements: [],
+      check_in_time: null,
+      check_out_time: null,
+      actual_lat: null,
+      actual_lng: null,
     });
 
     setShifts(prev => [newShift, ...prev]);
@@ -61,6 +74,23 @@ export function EmployerHub() {
   const handleDispute = (shiftId: string) => {
     db.disputeShift(shiftId);
     setShifts(currentUser ? db.getShiftsByPosterId(currentUser.id) : []);
+  };
+
+  const handleOpenRating = (shift: Shift) => {
+    setRatingShift(shift);
+    setShowRatingModal(true);
+  };
+
+  const handleSubmitRating = (rating: number, feedback: string) => {
+    if (!currentUser || !ratingShift || !ratingShift.worker_id) return;
+    db.addReview({
+      shift_id: ratingShift.id,
+      reviewer_id: currentUser.id,
+      reviewee_id: ratingShift.worker_id,
+      rating_stars: rating,
+      feedback_text: feedback,
+    });
+    setRatingShift(null);
   };
 
   return (
@@ -85,6 +115,30 @@ export function EmployerHub() {
             + Post a New Shift
           </button>
         </div>
+
+        {/* Pending Reviews Banner */}
+        {unreviewedShifts.length > 0 && (
+          <div className="bg-primary-500/10 border border-primary-500/30 rounded-xl p-4 mb-5" data-testid="pending-reviews-banner">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">⭐</span>
+              <p className="text-sm font-bold text-primary-500">
+                {unreviewedShifts.length} shift{unreviewedShifts.length > 1 ? 's' : ''} awaiting your review
+              </p>
+            </div>
+            <div className="space-y-2">
+              {unreviewedShifts.slice(0, 3).map(shift => (
+                <button
+                  key={shift.id}
+                  onClick={() => handleOpenRating(shift)}
+                  className="w-full flex items-center justify-between bg-surface-800 rounded-lg px-3 py-2 hover:bg-surface-700 transition-all"
+                >
+                  <span className="text-xs text-white font-medium">{shift.title}</span>
+                  <span className="text-[10px] font-semibold text-primary-500">Rate →</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3 mb-5">
@@ -177,6 +231,13 @@ export function EmployerHub() {
         isOpen={showPostModal}
         onClose={() => setShowPostModal(false)}
         onSubmit={handlePostShift}
+      />
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => { setShowRatingModal(false); setRatingShift(null); }}
+        onSubmit={handleSubmitRating}
+        shiftTitle={ratingShift?.title || ''}
+        revieweeName={ratingShift?.worker_id ? (db.getUserById(ratingShift.worker_id)?.full_name || 'Worker') : 'Worker'}
       />
     </div>
   );
