@@ -15,16 +15,16 @@ export function calculateAverageRating(reviews: Review[]): number {
  */
 export function formatFeedbackSnippet(text: string, maxLength: number = 80): string {
   if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength).trimEnd() + '\u2026';
+  return text.slice(0, maxLength).trimEnd() + '…';
 }
 
 /**
- * Generate star display string (e.g. "\u2605\u2605\u2605\u2605\u2606" for 4 stars).
+ * Generate star display string (e.g. "★★★★☆" for 4 stars).
  */
 export function renderStars(rating: number): string {
   const full = Math.floor(rating);
   const empty = 5 - full;
-  return '\u2605'.repeat(full) + '\u2606'.repeat(empty);
+  return '★'.repeat(full) + '☆'.repeat(empty);
 }
 
 /**

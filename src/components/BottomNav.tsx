@@ -13,16 +13,16 @@ export function BottomNav() {
   const { currentUser } = useAuthStore();
 
   const businessNav: NavItem[] = [
-    { path: '/employer', label: 'Shifts', icon: '\ud83d\udccb' },
-    { path: '/employer/post', label: 'Post', icon: '\u2795' },
-    { path: '/employer/discover', label: 'Discover', icon: '\ud83d\udd0d' },
-    { path: '/employer/profile', label: 'Profile', icon: '\ud83d\udc64' },
+    { path: '/employer', label: 'Shifts', icon: '📋' },
+    { path: '/employer/post', label: 'Post', icon: '➕' },
+    { path: '/employer/discover', label: 'Discover', icon: '🔍' },
+    { path: '/employer/profile', label: 'Profile', icon: '👤' },
   ];
 
   const workerNav: NavItem[] = [
-    { path: '/worker', label: 'Find Gigs', icon: '\ud83d\udd0d' },
-    { path: '/worker/earnings', label: 'Earnings', icon: '\ud83d\udcb0' },
-    { path: '/worker/profile', label: 'Profile', icon: '\ud83d\udc64' },
+    { path: '/worker', label: 'Find Gigs', icon: '🔍' },
+    { path: '/worker/earnings', label: 'Earnings', icon: '💰' },
+    { path: '/worker/profile', label: 'Profile', icon: '👤' },
   ];
 
   const navItems = currentUser?.role === 'business' ? businessNav : workerNav;
