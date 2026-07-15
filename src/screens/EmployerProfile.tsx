@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { saveCreditCard } from '../services/stripe';
+import { getRecentFeedback, renderStars } from '../services/reviews';
+import { db } from '../store/database';
+import { Review } from '../types';
 import { useNotificationBanner } from '../store/notificationBanner';
 import { Header } from '../components/Header';
 import { BottomNav } from '../components/BottomNav';
@@ -79,6 +82,11 @@ export function EmployerProfile() {
 
   const hasPaymentMethod = !!businessProfile?.default_payment_method;
 
+  // Reviews data
+  const userReviews: Review[] = currentUser ? db.getReviewsForUser(currentUser.id) : [];
+  const averageRating = currentUser ? db.getAverageRating(currentUser.id) : 0;
+  const recentFeedback = getRecentFeedback(userReviews);
+
   return (
     <div className="screen-container bg-surface-900 pb-20">
       <Header />
@@ -121,6 +129,36 @@ export function EmployerProfile() {
           </div>
         )}
 
+
+        {/* Ratings & Reviews Card */}
+        {userReviews.length > 0 && (
+          <div className="bg-surface-800 rounded-2xl p-5 border border-surface-700 mb-5" data-testid="employer-reviews-card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-white">Ratings from Workers</h3>
+              <span className="text-xs text-surface-400">{userReviews.length} review{userReviews.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl font-bold text-primary-500">{averageRating > 0 ? averageRating.toFixed(1) : "-"}</span>
+              <div>
+                <p className="text-sm text-primary-400">{renderStars(averageRating)}</p>
+                <p className="text-[11px] text-surface-400">Average from {userReviews.length} review{userReviews.length !== 1 ? "s" : ""}</p>
+              </div>
+            </div>
+            {recentFeedback.length > 0 && (
+              <div className="space-y-2">
+                {recentFeedback.map((fb, i) => (
+                  <div key={i} className="bg-surface-900 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-primary-400">{"★".repeat(fb.stars)}{"☆".repeat(5 - fb.stars)}</span>
+                      <span className="text-[10px] text-surface-500">{fb.date}</span>
+                    </div>
+                    <p className="text-xs text-surface-300">{fb.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {/* Payment Methods Section */}
         <div className="bg-surface-800 rounded-2xl p-5 border border-surface-700 mb-5">
           <div className="flex items-center justify-between mb-4">
