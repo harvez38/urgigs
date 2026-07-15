@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { db } from '../store/database';
+import { Review } from '../types';
 import { submitScreening } from '../services/verification';
+import { getRecentFeedback, renderStars } from '../services/reviews';
 import { Header } from '../components/Header';
 import { BottomNav } from '../components/BottomNav';
 
@@ -48,13 +50,18 @@ export function WorkerProfile() {
     setSubmittingCheck(false);
   };
 
+
+  // Reviews data
+  const userReviews: Review[] = currentUser ? db.getReviewsForUser(currentUser.id) : [];
+  const averageRating = currentUser ? db.getAverageRating(currentUser.id) : 0;
+  const recentFeedback = getRecentFeedback(userReviews);
   const bgStatus = workerProfile?.background_check_status || 'unsubmitted';
 
   const bgStatusConfig: Record<string, { label: string; color: string; icon: string }> = {
-    unsubmitted: { label: 'Not Submitted', color: 'text-surface-400', icon: '\u25cb' },
-    pending: { label: 'Pending Review', color: 'text-amber-400', icon: '\u23f3' },
-    passed: { label: 'Passed', color: 'text-success-400', icon: '\u2713' },
-    failed: { label: 'Failed', color: 'text-alert-400', icon: '\u2717' },
+    unsubmitted: { label: 'Not Submitted', color: 'text-surface-400', icon: '○' },
+    pending: { label: 'Pending Review', color: 'text-amber-400', icon: '⏳' },
+    passed: { label: 'Passed', color: 'text-success-400', icon: '✓' },
+    failed: { label: 'Failed', color: 'text-alert-400', icon: '✗' },
   };
 
   const statusInfo = bgStatusConfig[bgStatus];
@@ -89,12 +96,42 @@ export function WorkerProfile() {
               <p className="text-[11px] text-surface-400">Gigs Done</p>
             </div>
             <div className="bg-surface-900 rounded-xl p-3 text-center">
-              <p className="text-lg font-bold text-primary-500">\u2b50 {workerProfile?.rating}</p>
+              <p className="text-lg font-bold text-primary-500">⭐ {workerProfile?.rating}</p>
               <p className="text-[11px] text-surface-400">Rating</p>
             </div>
           </div>
         </div>
 
+
+        {/* Ratings & Reviews Card */}
+        {userReviews.length > 0 && (
+          <div className="bg-surface-800 rounded-2xl p-5 border border-surface-700 mb-5" data-testid="worker-reviews-card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-white">Ratings & Reviews</h3>
+              <span className="text-xs text-surface-400">{userReviews.length} review{userReviews.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl font-bold text-primary-500">{averageRating > 0 ? averageRating.toFixed(1) : "-"}</span>
+              <div>
+                <p className="text-sm text-primary-400">{renderStars(averageRating)}</p>
+                <p className="text-[11px] text-surface-400">Average from {userReviews.length} review{userReviews.length !== 1 ? "s" : ""}</p>
+              </div>
+            </div>
+            {recentFeedback.length > 0 && (
+              <div className="space-y-2">
+                {recentFeedback.map((fb, i) => (
+                  <div key={i} className="bg-surface-900 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-primary-400">{"★".repeat(fb.stars)}{"☆".repeat(5 - fb.stars)}</span>
+                      <span className="text-[10px] text-surface-500">{fb.date}</span>
+                    </div>
+                    <p className="text-xs text-surface-300">{fb.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {/* Background Check Status Card */}
         <div className="bg-surface-800 rounded-2xl p-5 border border-surface-700 mb-5" data-testid="background-check-card">
           <div className="flex items-center justify-between mb-3">
@@ -120,7 +157,7 @@ export function WorkerProfile() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Submitting\u2026
+                    Submitting…
                   </>
                 ) : (
                   'Submit Background Check'
@@ -138,7 +175,7 @@ export function WorkerProfile() {
           {bgStatus === 'passed' && (
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold text-success-500 bg-success-500/10 px-2.5 py-1 rounded-full">
-                \u2713 Verified Worker
+                ✓ Verified Worker
               </span>
               <p className="text-xs text-surface-400">You're approved to accept all gig types.</p>
             </div>
@@ -174,7 +211,7 @@ export function WorkerProfile() {
 
           {saved && (
             <div className="bg-success-500/10 border border-success-500/30 text-success-500 text-xs font-medium px-3 py-2 rounded-lg mb-3">
-              \u2713 Skills updated successfully
+              ✓ Skills updated successfully
             </div>
           )}
 
@@ -200,7 +237,7 @@ export function WorkerProfile() {
                 {editedSkills.map(skill => (
                   <span key={skill} className="inline-flex items-center gap-1 bg-primary-500/20 text-primary-400 px-3 py-1.5 rounded-full text-xs font-medium">
                     {skill}
-                    <button onClick={() => handleRemoveSkill(skill)} className="text-primary-400 hover:text-alert-400 ml-1">\u00d7</button>
+                    <button onClick={() => handleRemoveSkill(skill)} className="text-primary-400 hover:text-alert-400 ml-1">×</button>
                   </span>
                 ))}
               </div>
