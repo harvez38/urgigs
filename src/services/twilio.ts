@@ -1,11 +1,34 @@
 // Twilio SMS Service — Phase 5C: Calls backend API routes
-// No secrets on the frontend; all SMS logic goes through the backend
-import { API_BASE_URL } from '../config/api';
+// No secrets on the frontend; all SMS logic goes through the backend.
+// In demo mode (no VITE_API_BASE_URL), SMS messages are logged to the console instead.
+import { API_BASE_URL, IS_BACKEND_CONFIGURED } from '../config/api';
 import { useNotificationBanner } from '../store/notificationBanner';
 
-export const IS_TWILIO_LIVE = true; // determined by backend config
+// True when SMS requests go to the real backend. Whether the backend actually has
+// Twilio credentials is reported by checkTwilioStatus().
+export const IS_TWILIO_LIVE = IS_BACKEND_CONFIGURED;
 
-export async function sendSMS(to: string, message: string): Promise<{ success: boolean; sid?: string; mock?: boolean }> {
+export interface SMSResult {
+  success: boolean;
+  sid?: string;
+  mock?: boolean;
+}
+
+function sendDemoSMS(to: string, message: string): SMSResult {
+  console.log(`[Twilio SMS Sent to ${to}]: ${message}`);
+  return {
+    success: true,
+    sid: `mock_sms_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    mock: true,
+  };
+}
+
+export async function sendSMS(to: string, message: string): Promise<SMSResult> {
+  if (!IS_TWILIO_LIVE) return sendDemoSMS(to, message);
+
+  // Nothing to send to; the backend would reject this with a 400.
+  if (!to) return { success: false };
+
   try {
     const response = await fetch(`${API_BASE_URL}/api/twilio/send`, {
       method: 'POST',
@@ -30,6 +53,7 @@ export async function sendSMS(to: string, message: string): Promise<{ success: b
 
 // Check if backend Twilio is configured
 export async function checkTwilioStatus(): Promise<{ configured: boolean }> {
+  if (!IS_BACKEND_CONFIGURED) return { configured: false };
   try {
     const response = await fetch(`${API_BASE_URL}/api/health`);
     if (!response.ok) return { configured: false };

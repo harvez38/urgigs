@@ -7,5 +7,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     globals: true,
+    // The backend has its own Jest suite (cd backend && npm test)
+    exclude: ['**/node_modules/**', '**/dist/**', 'backend/**'],
   },
 });

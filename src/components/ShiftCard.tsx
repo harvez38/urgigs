@@ -115,10 +115,10 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
       <div className="flex items-center justify-between pt-3 border-t border-surface-200">
         <div className="flex items-center gap-3 text-xs text-surface-500">
           <span className="flex items-center gap-1">
-            \ud83d\udccd {shift.city}
+            📍 {shift.city}
           </span>
           <span className="flex items-center gap-1">
-            \ud83d\udd50 {duration}h
+            🕐 {duration}h
           </span>
         </div>
         <div className="text-right">
@@ -130,7 +130,7 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
       {/* Estimated Total Pay */}
       <div className="mt-2 flex items-center justify-between">
         <span className="text-[11px] text-surface-400">
-          {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} \u00b7 {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} \u2013 {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+          {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} – {endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
         </span>
         <span className="text-xs font-bold text-success-600">
           Est. ${totalPay.toFixed(0)}
@@ -164,7 +164,7 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
               className="mt-2 w-full text-xs font-semibold text-alert-500 bg-alert-500/10 border border-alert-500/30 px-4 py-2 rounded-xl hover:bg-alert-500/20 transition-colors active:scale-95"
               aria-label="Flag dispute"
             >
-              \ud83d\udea9 Flag Dispute
+              🚩 Flag Dispute
             </button>
           )}
         </div>
@@ -178,7 +178,7 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
             </span>
             {claimed ? (
               <span className="text-xs font-semibold text-success-600 bg-success-50 px-3 py-1.5 rounded-lg">
-                \u2713 Claimed
+                ✓ Claimed
               </span>
             ) : shift.status === 'open' ? (
               <button
@@ -204,10 +204,10 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Locating\u2026
+                  Locating…
                 </>
               ) : (
-                <>\ud83d\udccd GPS Check-In</>
+                <>📍 GPS Check-In</>
               )}
             </button>
           )}
@@ -226,10 +226,10 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Processing\u2026
+                  Processing…
                 </>
               ) : (
-                <>\ud83d\udccd GPS Check-Out</>
+                <>📍 GPS Check-Out</>
               )}
             </button>
           )}
@@ -240,7 +240,7 @@ export function ShiftCard({ shift, variant, companyName, estimatedTotalPay, disp
               className="mt-2 w-full text-xs font-semibold text-alert-500 bg-alert-500/10 border border-alert-500/30 px-4 py-2 rounded-xl hover:bg-alert-500/20 transition-colors active:scale-95"
               aria-label="Flag dispute"
             >
-              \ud83d\udea9 Flag Dispute
+              🚩 Flag Dispute
             </button>
           )}
         </div>

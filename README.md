@@ -41,12 +41,17 @@ npm install
 npm run dev
 ```
 
+### Demo mode vs. live backend
+
+If `VITE_API_BASE_URL` is not set, the app runs in **demo mode**: Stripe payouts, card saving and SMS alerts are simulated in the browser (SMS messages are printed to the console). To use real Stripe and Twilio, run the backend (`cd backend && npm install && npm run dev`) and set `VITE_API_BASE_URL=http://localhost:3001` in `.env.local`. See `DEPLOYMENT.md`.
+
 ## Demo Accounts
 
 | Role     | Email               | Password     |
 |----------|---------------------|--------------|
 | Employer | employer@urgigs.com | any password |
 | Worker   | worker@urgigs.com   | any password |
+| Admin    | admin@urgigs.com    | any password |
 
 ## Project Structure
 
@@ -62,10 +67,10 @@ src/
 ## Running Tests
 
 ```bash
-npx vitest run
+npx vitest run           # frontend
+cd backend && npm test   # backend
 ```
 
 ## License
 
 Private project.
-test

@@ -32,7 +32,7 @@ describe('MockDatabase', () => {
 
     it('should list all users', () => {
       const users = db.getAllUsers();
-      expect(users.length).toBe(3);
+      expect(users.length).toBe(6); // employer, admin, Sarah + 3 verified demo workers
     });
   });
 

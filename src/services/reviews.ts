@@ -22,7 +22,8 @@ export function formatFeedbackSnippet(text: string, maxLength: number = 80): str
  * Generate star display string (e.g. "★★★★☆" for 4 stars).
  */
 export function renderStars(rating: number): string {
-  const full = Math.floor(rating);
+  // Round to the nearest whole star (4.9 -> 5, 4.4 -> 4) and keep within 0-5.
+  const full = Math.min(5, Math.max(0, Math.round(rating)));
   const empty = 5 - full;
   return '★'.repeat(full) + '☆'.repeat(empty);
 }

@@ -76,7 +76,7 @@ export function PostShiftScreen() {
 
         {success && (
           <div className="bg-success-500/10 border border-success-500/30 text-success-500 text-sm font-medium px-4 py-3 rounded-xl mb-4">
-            \u2713 Shift posted successfully! Redirecting...
+            ✓ Shift posted successfully! Redirecting...
           </div>
         )}
 

@@ -1,6 +1,22 @@
-import { User, BusinessProfile, WorkerProfile, Shift, Notification, BackgroundCheckStatus } from '../types';
+import { User, BusinessProfile, WorkerProfile, Shift, Notification, BackgroundCheckStatus, Review } from '../types';
 import { IS_STRIPE_LIVE } from '../config/stripe';
 import { sendSMS } from '../services/twilio';
+import { calculateAverageRating } from '../services/reviews';
+
+/** Fields a caller must supply to create a shift. GPS/check-in fields start empty. */
+export type NewShiftInput = Omit<
+  Shift,
+  'id' | 'created_at' | 'updated_at' | 'check_in_time' | 'check_out_time' | 'actual_lat' | 'actual_lng'
+> & Partial<Pick<Shift, 'check_in_time' | 'check_out_time' | 'actual_lat' | 'actual_lng'>>;
+
+export type NewReviewInput = Omit<Review, 'id' | 'created_at'>;
+
+export type ReviewerRole = 'business' | 'worker';
+
+/** A verified worker joined with their display name, for the employer discovery screen. */
+export interface DiscoverableWorker extends WorkerProfile {
+  user_name: string;
+}
 
 export interface ShiftWithBusiness extends Shift {
   company_name: string;
@@ -38,6 +54,7 @@ class MockDatabase {
   private shifts: Map<string, Shift> = new Map();
   private notifications: Map<string, Notification> = new Map();
   private transactions: Map<string, TransactionRecord> = new Map();
+  private reviews: Map<string, Review> = new Map();
   private idCounter = 100;
   private notifCounter = 0;
 
@@ -127,6 +144,33 @@ class MockDatabase {
     };
 
     this.workerProfiles.set(workerProfile.id, workerProfile);
+
+    // Additional verified workers so employers have talent to browse in Worker Discovery
+    const demoWorkers: Array<{ user: Omit<User, 'role' | 'password_hash' | 'avatar_url'>; profile: Omit<WorkerProfile, 'user_id' | 'stripe_account_active' | 'is_verified' | 'background_check_status'> }> = [
+      {
+        user: { id: 'usr_wrk_002', email: 'jordan@urgigs.com', full_name: 'Jordan Lee', phone: '+1-555-0303', created_at: '2026-03-02T10:00:00Z', updated_at: '2026-07-01T10:00:00Z' },
+        profile: { id: 'wrk_002', skills_tags: ['event setup', 'av equipment', 'heavy lifting'], hourly_rate_min: 20, hourly_rate_max: 30, availability: 'full_time', experience_years: 5, bio: 'Event production crew lead. Comfortable with staging, lighting rigs and AV setup.', rating: 4.9, gigs_completed: 82, created_at: '2026-03-02T10:30:00Z' },
+      },
+      {
+        user: { id: 'usr_wrk_003', email: 'priya@urgigs.com', full_name: 'Priya Patel', phone: '+1-555-0404', created_at: '2026-03-15T10:00:00Z', updated_at: '2026-07-05T10:00:00Z' },
+        profile: { id: 'wrk_003', skills_tags: ['catering', 'food prep', 'customer service'], hourly_rate_min: 18, hourly_rate_max: 28, availability: 'part_time', experience_years: 2, bio: 'Friendly catering server with food handler certification and plated-service experience.', rating: 4.6, gigs_completed: 31, created_at: '2026-03-15T10:30:00Z' },
+      },
+      {
+        user: { id: 'usr_wrk_004', email: 'diego@urgigs.com', full_name: 'Diego Ramirez', phone: '+1-555-0505', created_at: '2026-04-01T10:00:00Z', updated_at: '2026-07-08T10:00:00Z' },
+        profile: { id: 'wrk_004', skills_tags: ['bartending', 'mixology', 'customer service'], hourly_rate_min: 25, hourly_rate_max: 40, availability: 'flexible', experience_years: 7, bio: 'Craft cocktail bartender for weddings, galas and private events.', rating: 4.7, gigs_completed: 120, created_at: '2026-04-01T10:30:00Z' },
+      },
+    ];
+
+    demoWorkers.forEach(({ user, profile }) => {
+      this.users.set(user.id, { ...user, role: 'worker', password_hash: 'hashed_password_demo', avatar_url: null });
+      this.workerProfiles.set(profile.id, {
+        ...profile,
+        user_id: user.id,
+        stripe_account_active: true,
+        is_verified: true,
+        background_check_status: 'passed',
+      });
+    });
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -284,6 +328,94 @@ class MockDatabase {
     ];
 
     shifts.forEach(s => this.shifts.set(s.id, s));
+
+    // One existing review: the employer already rated Sarah for the rooftop party (shift_004).
+    // shift_005 is left unreviewed by both sides so the "Rate" prompts appear in the demo.
+    const seededReview: Review = {
+      id: 'rev_001',
+      shift_id: 'shift_004',
+      reviewer_id: 'usr_biz_001',
+      reviewee_id: 'usr_wrk_001',
+      rating_stars: 5,
+      feedback_text: 'Sarah was fantastic — on time, professional, and our guests loved her cocktails.',
+      created_at: '2026-06-17T10:00:00Z',
+    };
+    this.reviews.set(seededReview.id, seededReview);
+  }
+
+  // Review operations
+  hasReviewed(shiftId: string, reviewerId: string): boolean {
+    return Array.from(this.reviews.values()).some(
+      r => r.shift_id === shiftId && r.reviewer_id === reviewerId
+    );
+  }
+
+  /**
+   * Add a review for a paid shift. Returns undefined if the review is invalid:
+   * shift not paid, reviewer/reviewee not the two parties on the shift,
+   * stars outside 1-5, or the reviewer already reviewed this shift.
+   */
+  addReview(data: NewReviewInput): Review | undefined {
+    const shift = this.shifts.get(data.shift_id);
+    if (!shift || shift.status !== 'paid' || !shift.worker_id) return undefined;
+
+    const stars = Math.round(data.rating_stars);
+    if (stars < 1 || stars > 5) return undefined;
+
+    const parties = [shift.posted_by, shift.worker_id];
+    if (!parties.includes(data.reviewer_id) || !parties.includes(data.reviewee_id)) return undefined;
+    if (data.reviewer_id === data.reviewee_id) return undefined;
+    if (this.hasReviewed(data.shift_id, data.reviewer_id)) return undefined;
+
+    const review: Review = {
+      ...data,
+      rating_stars: stars,
+      feedback_text: data.feedback_text.trim(),
+      id: this.generateId('rev'),
+      created_at: new Date().toISOString(),
+    };
+    this.reviews.set(review.id, review);
+
+    this.createNotification(
+      data.reviewee_id,
+      `You received a ${stars}-star review for "${shift.title}".`
+    );
+
+    return review;
+  }
+
+  /** Reviews received by a user, newest first. */
+  getReviewsForUser(userId: string): Review[] {
+    return Array.from(this.reviews.values())
+      .filter(r => r.reviewee_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  getReviewsByShiftId(shiftId: string): Review[] {
+    return Array.from(this.reviews.values()).filter(r => r.shift_id === shiftId);
+  }
+
+  getAverageRating(userId: string): number {
+    return calculateAverageRating(this.getReviewsForUser(userId));
+  }
+
+  /** Paid shifts the user took part in but hasn't reviewed yet. */
+  getUnreviewedPaidShifts(userId: string, role: ReviewerRole): Shift[] {
+    return Array.from(this.shifts.values()).filter(s => {
+      if (s.status !== 'paid' || !s.worker_id) return false;
+      const involved = role === 'business' ? s.posted_by === userId : s.worker_id === userId;
+      return involved && !this.hasReviewed(s.id, userId);
+    });
+  }
+
+  /** Workers who passed verification, joined with their names. */
+  getVerifiedWorkers(): DiscoverableWorker[] {
+    return Array.from(this.workerProfiles.values())
+      .filter(wp => wp.is_verified)
+      .map(wp => ({
+        ...wp,
+        user_name: this.users.get(wp.user_id)?.full_name ?? 'Unknown Worker',
+      }));
   }
 
   // Notification operations
@@ -567,9 +699,13 @@ class MockDatabase {
   }
 
   // Shift operations
-  createShift(data: Omit<Shift, 'id' | 'created_at' | 'updated_at'>): Shift {
+  createShift(data: NewShiftInput): Shift {
     const now = new Date().toISOString();
     const shift: Shift = {
+      check_in_time: null,
+      check_out_time: null,
+      actual_lat: null,
+      actual_lng: null,
       ...data,
       id: this.generateId('shift'),
       created_at: now,
@@ -828,6 +964,7 @@ class MockDatabase {
     this.shifts.clear();
     this.notifications.clear();
     this.transactions.clear();
+    this.reviews.clear();
     this.idCounter = 100;
     this.seed();
   }

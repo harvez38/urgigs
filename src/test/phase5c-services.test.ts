@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// These tests cover the real-backend path, so point the app at a backend URL
+vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:3001');
+
 // Mock fetch globally
 const mockFetch = vi.fn();
 (globalThis as any).fetch = mockFetch;
