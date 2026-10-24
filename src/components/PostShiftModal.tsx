@@ -60,12 +60,12 @@ export function PostShiftModal({ isOpen, onClose, onSubmit }: PostShiftModalProp
       <div className="relative w-full max-w-md bg-surface-900 rounded-t-3xl sm:rounded-3xl border border-surface-700 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-surface-900 px-5 pt-5 pb-3 border-b border-surface-800 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Post a Shift</h2>
+          <h2 className="text-lg font-bold text-white">Post a New Shift</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-surface-800 flex items-center justify-center text-surface-400 hover:text-white"
           >
-            \u2715
+            ✕
           </button>
         </div>
 
@@ -84,7 +84,7 @@ export function PostShiftModal({ isOpen, onClose, onSubmit }: PostShiftModalProp
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Description *</label>
+            <label className="text-xs font-semibold text-surface-300 mb-1.5 block">Detailed Description *</label>
             <textarea
               value={formData.description}
               onChange={(e) => updateField('description', e.target.value)}
@@ -137,7 +137,7 @@ export function PostShiftModal({ isOpen, onClose, onSubmit }: PostShiftModalProp
               Cancel
             </button>
             <button type="submit" className="btn-primary flex-1">
-              Post Shift
+              Publish Shift
             </button>
           </div>
         </form>

@@ -19,7 +19,9 @@ export function WelcomeScreen() {
     const success = login(email, password);
     if (success) {
       const user = useAuthStore.getState().currentUser;
-      if (user?.role === 'business') {
+      if (user?.role === 'admin') {
+        navigate('/admin');
+      } else if (user?.role === 'business') {
         navigate('/employer');
       } else {
         navigate('/worker');
@@ -62,7 +64,7 @@ export function WelcomeScreen() {
               >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span className="text-2xl">\ud83c\udfe2</span>
+                    <span className="text-2xl">🏢</span>
                   </div>
                   <div>
                     <h3 className="font-bold text-white">I want to Hire</h3>
@@ -80,7 +82,7 @@ export function WelcomeScreen() {
               >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span className="text-2xl">\ud83d\udcbc</span>
+                    <span className="text-2xl">💼</span>
                   </div>
                   <div>
                     <h3 className="font-bold text-white">I want to Work</h3>
@@ -174,6 +176,7 @@ export function WelcomeScreen() {
           <div className="space-y-1.5 text-xs text-surface-300">
             <p><span className="font-medium text-primary-500">Employer:</span> employer@urgigs.com</p>
             <p><span className="font-medium text-primary-500">Worker:</span> worker@urgigs.com</p>
+            <p><span className="font-medium text-primary-500">Admin:</span> admin@urgigs.com</p>
             <p className="text-surface-500 italic">Any password works for demo</p>
           </div>
         </div>

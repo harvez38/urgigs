@@ -1,4 +1,11 @@
-import { jsonResponse } from '@/lib/cors';
+import { jsonResponse, handleOptions } from '@/lib/cors';
+
+// Read env vars on every request instead of freezing them into a static file at build time.
+export const dynamic = 'force-dynamic';
+
+export async function OPTIONS() {
+  return handleOptions();
+}
 
 export async function GET() {
   return jsonResponse({

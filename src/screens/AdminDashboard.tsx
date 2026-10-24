@@ -201,12 +201,12 @@ export function AdminDashboard() {
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                           isVerified ? 'bg-success-500/20 text-success-400' : 'bg-amber-500/20 text-amber-400'
                         }`}>
-                          {isVerified ? '\u2713 Verified' : '\u23f3 Unverified'}
+                          {isVerified ? '✓ Verified' : '⏳ Unverified'}
                         </span>
                       )}
                       {user.role === 'business' && (
                         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-success-500/20 text-success-400">
-                          \u2713 Active
+                          ✓ Active
                         </span>
                       )}
                     </div>
@@ -220,7 +220,7 @@ export function AdminDashboard() {
                         </button>
                       )}
                       {user.role === 'worker' && isVerified && (
-                        <span className="text-[11px] text-surface-500">\u2014</span>
+                        <span className="text-[11px] text-surface-500">—</span>
                       )}
                     </div>
                   </div>
@@ -303,7 +303,7 @@ export function AdminDashboard() {
           <div>
             {disputedShifts.length === 0 ? (
               <div className="bg-surface-800 border border-surface-700 rounded-xl p-8 text-center">
-                <p className="text-3xl mb-3">\u2705</p>
+                <p className="text-3xl mb-3">✅</p>
                 <p className="text-sm font-semibold text-white">No Active Disputes</p>
                 <p className="text-xs text-surface-400 mt-1">All disputes have been resolved.</p>
               </div>
@@ -316,7 +316,7 @@ export function AdminDashboard() {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="text-sm font-bold text-white">{shift.title}</h3>
-                          <p className="text-[11px] text-surface-400 mt-0.5">{getBusinessName(shift)} \u00b7 {shift.city}, {shift.state}</p>
+                          <p className="text-[11px] text-surface-400 mt-0.5">{getBusinessName(shift)} · {shift.city}, {shift.state}</p>
                         </div>
                         <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-alert-500/20 text-alert-400 border border-alert-500/30">
                           DISPUTED
@@ -341,13 +341,13 @@ export function AdminDashboard() {
                           onClick={() => handleResolveDispute(shift.id, 'approve')}
                           className="flex-1 text-xs font-bold bg-success-500 text-white px-4 py-2.5 rounded-xl hover:bg-success-400 active:scale-95 transition-all"
                         >
-                          \u2713 Approve Worker Payout
+                          ✓ Approve Worker Payout
                         </button>
                         <button
                           onClick={() => handleResolveDispute(shift.id, 'refund')}
                           className="flex-1 text-xs font-bold bg-alert-500 text-white px-4 py-2.5 rounded-xl hover:bg-alert-400 active:scale-95 transition-all"
                         >
-                          \u21a9 Refund Employer
+                          ↩ Refund Employer
                         </button>
                       </div>
                     </div>
@@ -364,7 +364,7 @@ export function AdminDashboard() {
             <h3 className="text-sm font-bold text-white mb-4">Pending Background Checks</h3>
             {pendingBackgroundChecks.length === 0 ? (
               <div className="bg-surface-800 border border-surface-700 rounded-xl p-8 text-center">
-                <p className="text-3xl mb-3">\u2705</p>
+                <p className="text-3xl mb-3">✅</p>
                 <p className="text-sm font-semibold text-white">No Pending Background Checks</p>
                 <p className="text-xs text-surface-400 mt-1">All background checks have been reviewed.</p>
               </div>
@@ -380,7 +380,7 @@ export function AdminDashboard() {
                           <p className="text-[11px] text-surface-400 mt-0.5">{user?.email}</p>
                         </div>
                         <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                          \u23f3 PENDING
+                          ⏳ PENDING
                         </span>
                       </div>
                       <div className="grid grid-cols-3 gap-3 mb-4">
@@ -394,7 +394,7 @@ export function AdminDashboard() {
                         </div>
                         <div className="bg-surface-700/50 rounded-lg p-2.5">
                           <p className="text-[10px] text-surface-400 uppercase">Rating</p>
-                          <p className="text-xs font-semibold text-white mt-0.5">\u2b50 {wp.rating}</p>
+                          <p className="text-xs font-semibold text-white mt-0.5">⭐ {wp.rating}</p>
                         </div>
                       </div>
                       <div className="flex gap-3">
@@ -402,13 +402,13 @@ export function AdminDashboard() {
                           onClick={() => handleApproveBackground(wp.user_id)}
                           className="flex-1 text-xs font-bold bg-success-500 text-white px-4 py-2.5 rounded-xl hover:bg-success-400 active:scale-95 transition-all"
                         >
-                          \u2713 Approve (Pass)
+                          ✓ Approve (Pass)
                         </button>
                         <button
                           onClick={() => handleRejectBackground(wp.user_id)}
                           className="flex-1 text-xs font-bold bg-alert-500 text-white px-4 py-2.5 rounded-xl hover:bg-alert-400 active:scale-95 transition-all"
                         >
-                          \u2717 Reject (Fail)
+                          ✗ Reject (Fail)
                         </button>
                       </div>
                     </div>

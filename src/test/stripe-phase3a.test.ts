@@ -124,7 +124,8 @@ describe('Phase 3A: Stripe Connect Infrastructure', () => {
         cvc: '123',
       });
       expect(result.success).toBe(true);
-      expect(result.token).toBe('tok_mock_123');
+      expect(result.token).toBe('tok_mock_4242');
+      expect(result.last4).toBe('4242');
     });
 
     it('saves payment method to business profile', async () => {
@@ -134,7 +135,8 @@ describe('Phase 3A: Stripe Connect Infrastructure', () => {
         cvc: '123',
       });
       const bp = db.getBusinessProfileById('biz_001');
-      expect(bp!.default_payment_method).toBe('tok_mock_123');
+      expect(bp!.default_payment_method).toBe('tok_mock_4242');
+      expect(bp!.payment_last4).toBe('4242');
     });
   });
 

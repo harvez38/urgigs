@@ -36,7 +36,7 @@ The `vercel.json` rewrites `/api/*` requests to the backend Next.js serverless f
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key for client | `pk_live_...` or `pk_test_...` |
-| `VITE_API_BASE_URL` | Backend API base URL | `https://urgigs.vercel.app/api` |
+| `VITE_API_BASE_URL` | Backend root URL, without `/api` (the app adds `/api/...` itself). Leave unset to run in demo mode with simulated payments and SMS. | `https://urgigs-backend.vercel.app` |
 
 ### Database (if applicable)
 
@@ -80,7 +80,8 @@ npm run build:all
 - [ ] CORS headers in `backend/next.config.js` updated for production domain
 - [ ] Backend build passes: `cd backend && npm run build`
 - [ ] Frontend build passes: `npm run build`
-- [ ] Tests pass: `cd backend && npm test`
+- [ ] Tests pass: `npx vitest run` (frontend) and `cd backend && npm test`
+- [ ] No secret keys (Stripe secret, Twilio token) in any `VITE_` variable
 
 ## Branding
 

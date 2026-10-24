@@ -1,5 +1,6 @@
 // Stripe Connect Service — Phase 5C: Calls backend API routes
-import { API_BASE_URL } from '../config/api';
+// In demo mode (no VITE_API_BASE_URL), Stripe calls are simulated locally.
+import { API_BASE_URL, IS_BACKEND_CONFIGURED } from '../config/api';
 import { useNotificationBanner } from '../store/notificationBanner';
 import { db } from '../store/database';
 
@@ -33,6 +34,10 @@ export interface CardData {
 
 // Onboard worker via backend API (creates Stripe Express account)
 export async function onboardWorker(workerId: string, email?: string): Promise<StripeOnboardResult> {
+  if (!IS_BACKEND_CONFIGURED) {
+    db.updateWorkerStripeStatus(workerId, true);
+    return { success: true, accountId: `acct_mock_${randomSuffix()}`, mock: true };
+  }
   try {
     const response = await fetch(`${API_BASE_URL}/api/stripe/onboard`, {
       method: 'POST',
@@ -68,6 +73,9 @@ export async function createPaymentIntent(
   businessId: string,
   shiftId?: string
 ): Promise<StripeCardResult> {
+  if (!IS_BACKEND_CONFIGURED) {
+    return { success: true, paymentIntentId: `pi_mock_${randomSuffix()}`, mock: true };
+  }
   try {
     const response = await fetch(`${API_BASE_URL}/api/stripe/payment-intent`, {
       method: 'POST',
@@ -96,6 +104,12 @@ export async function createPaymentIntent(
 
 // Save credit card — calls backend to create a PaymentIntent / setup for the card
 export async function saveCreditCard(businessId: string, cardData: CardData): Promise<StripeCardResult> {
+  const last4 = cardData.number.replace(/\s/g, '').slice(-4);
+  if (!IS_BACKEND_CONFIGURED) {
+    const token = `tok_mock_${last4}`;
+    db.saveBusinessPaymentMethod(businessId, token, last4);
+    return { success: true, token, last4, mock: true };
+  }
   try {
     const response = await fetch(`${API_BASE_URL}/api/stripe/payment-intent`, {
       method: 'POST',
@@ -114,7 +128,6 @@ export async function saveCreditCard(businessId: string, cardData: CardData): Pr
     }
 
     const data = await response.json();
-    const last4 = cardData.number.replace(/\s/g, '').slice(-4);
     const token = data.paymentIntentId || `tok_${Date.now()}`;
 
     db.saveBusinessPaymentMethod(businessId, token, last4);
@@ -139,6 +152,9 @@ export async function triggerTransfer(
   destinationAccountId: string,
   shiftId?: string
 ): Promise<StripeTransferResult> {
+  if (!IS_BACKEND_CONFIGURED) {
+    return { success: true, transferId: `tr_mock_${randomSuffix()}`, mock: true };
+  }
   try {
     const response = await fetch(`${API_BASE_URL}/api/stripe/transfer`, {
       method: 'POST',
@@ -166,6 +182,7 @@ export async function triggerTransfer(
 
 // Check if backend is connected and Stripe is configured
 export async function checkStripeStatus(): Promise<{ configured: boolean }> {
+  if (!IS_BACKEND_CONFIGURED) return { configured: false };
   try {
     const response = await fetch(`${API_BASE_URL}/api/health`);
     if (!response.ok) return { configured: false };
@@ -176,4 +193,9 @@ export async function checkStripeStatus(): Promise<{ configured: boolean }> {
   }
 }
 
-export const IS_STRIPE_LIVE = true; // now determined by backend config
+// True when Stripe requests go to the real backend (which may itself be in test/mock mode).
+export const IS_STRIPE_LIVE = IS_BACKEND_CONFIGURED;
+
+function randomSuffix(): string {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
