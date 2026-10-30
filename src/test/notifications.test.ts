@@ -87,6 +87,10 @@ describe('Notification System - Database', () => {
         slots_filled: 0,
         status: 'open',
         requirements: [],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
       });
 
       const workerNotifs = db.getNotificationsByUserId('usr_wrk_001');
@@ -115,6 +119,10 @@ describe('Notification System - Database', () => {
         slots_filled: 0,
         status: 'open',
         requirements: [],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
       });
 
       const bizNotifs = db.getNotificationsByUserId('usr_biz_001');

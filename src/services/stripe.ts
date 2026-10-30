@@ -175,5 +175,3 @@ export async function checkStripeStatus(): Promise<{ configured: boolean }> {
     return { configured: false };
   }
 }
-
-export const IS_STRIPE_LIVE = true; // now determined by backend config

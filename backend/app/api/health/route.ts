@@ -1,5 +1,8 @@
 import { jsonResponse } from '@/lib/cors';
 
+// Read env vars per request; otherwise Next prerenders this at build time
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   return jsonResponse({
     status: 'ok',

@@ -168,6 +168,10 @@ describe('Shift-Creation Flow Updates', () => {
       slots_filled: 0,
       status: 'open',
       requirements: [],
+      check_in_time: null,
+      check_out_time: null,
+      actual_lat: null,
+      actual_lng: null,
       created_at: '2026-07-14T12:00:00.000Z',
       updated_at: '2026-07-14T12:00:00.000Z',
     };

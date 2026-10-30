@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { db } from '../store/database';
 import { onboardWorker, saveCreditCard } from '../services/stripe';
 
@@ -102,7 +102,19 @@ describe('Phase 3A: Stripe Connect Infrastructure', () => {
     });
   });
 
+  // The services call the backend; simulate its mock-mode (no Stripe key) responses
+  const mockBackend = (body: Record<string, unknown>) =>
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => body }));
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   describe('Stripe Service - onboardWorker', () => {
+    beforeEach(() => {
+      mockBackend({ success: true, accountId: 'acct_mock_wrk_001', mock: true });
+    });
+
     it('returns success and account id', async () => {
       const result = await onboardWorker('usr_wrk_001');
       expect(result.success).toBe(true);
@@ -117,6 +129,10 @@ describe('Phase 3A: Stripe Connect Infrastructure', () => {
   });
 
   describe('Stripe Service - saveCreditCard', () => {
+    beforeEach(() => {
+      mockBackend({ success: true, paymentIntentId: 'tok_mock_123', clientSecret: 'tok_mock_123_secret', mock: true });
+    });
+
     it('returns success and mock token', async () => {
       const result = await saveCreditCard('biz_001', {
         number: '4242424242424242',

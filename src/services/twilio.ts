@@ -3,8 +3,6 @@
 import { API_BASE_URL } from '../config/api';
 import { useNotificationBanner } from '../store/notificationBanner';
 
-export const IS_TWILIO_LIVE = true; // determined by backend config
-
 export async function sendSMS(to: string, message: string): Promise<{ success: boolean; sid?: string; mock?: boolean }> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/twilio/send`, {

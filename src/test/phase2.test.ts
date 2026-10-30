@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { db } from '../store/database';
 
 describe('Phase 2 - Database Operations', () => {
@@ -21,6 +21,10 @@ describe('Phase 2 - Database Operations', () => {
         slots_filled: 0,
         status: 'open',
         requirements: ['Testing'],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
       });
 
       expect(shift.id).toMatch(/^shift_/);
@@ -49,6 +53,10 @@ describe('Phase 2 - Database Operations', () => {
         slots_filled: 0,
         status: 'open',
         requirements: [],
+        check_in_time: null,
+        check_out_time: null,
+        actual_lat: null,
+        actual_lng: null,
       });
 
       const business = db.getBusinessProfileById(shift.business_id);

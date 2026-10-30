@@ -15,7 +15,7 @@
 
 ### API Routing
 
-The `vercel.json` rewrites `/api/*` requests to the backend Next.js serverless functions at `/backend/api/*`.
+There is no `vercel.json` in the repo. Deploy `/backend` as its own Vercel project (Root Directory: `backend`, Framework Preset: **Next.js**) and point the frontend at it with `VITE_API_BASE_URL`.
 
 ---
 
@@ -36,7 +36,7 @@ The `vercel.json` rewrites `/api/*` requests to the backend Next.js serverless f
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key for client | `pk_live_...` or `pk_test_...` |
-| `VITE_API_BASE_URL` | Backend API base URL | `https://urgigs.vercel.app/api` |
+| `VITE_API_BASE_URL` | Backend origin (the client appends `/api/...`) | `https://urgigs-backend.vercel.app` |
 
 ### Database (if applicable)
 
@@ -80,7 +80,7 @@ npm run build:all
 - [ ] CORS headers in `backend/next.config.js` updated for production domain
 - [ ] Backend build passes: `cd backend && npm run build`
 - [ ] Frontend build passes: `npm run build`
-- [ ] Tests pass: `cd backend && npm test`
+- [ ] Tests pass: `npx vitest run` and `cd backend && npm test`
 
 ## Branding
 

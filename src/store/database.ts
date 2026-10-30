@@ -1,6 +1,7 @@
-import { User, BusinessProfile, WorkerProfile, Shift, Notification, BackgroundCheckStatus } from '../types';
+import { User, BusinessProfile, WorkerProfile, Shift, Notification, BackgroundCheckStatus, Review } from '../types';
 import { IS_STRIPE_LIVE } from '../config/stripe';
 import { sendSMS } from '../services/twilio';
+import { calculateAverageRating } from '../services/reviews';
 
 export interface ShiftWithBusiness extends Shift {
   company_name: string;
@@ -21,6 +22,10 @@ export interface AdminStats {
   disputedShifts: number;
 }
 
+export interface WorkerProfileWithName extends WorkerProfile {
+  user_name: string;
+}
+
 export interface TransactionRecord {
   shift_id: string;
   amount: number;
@@ -38,6 +43,7 @@ class MockDatabase {
   private shifts: Map<string, Shift> = new Map();
   private notifications: Map<string, Notification> = new Map();
   private transactions: Map<string, TransactionRecord> = new Map();
+  private reviews: Map<string, Review> = new Map();
   private idCounter = 100;
   private notifCounter = 0;
 
@@ -557,6 +563,68 @@ class MockDatabase {
     return Array.from(this.workerProfiles.values());
   }
 
+  getVerifiedWorkers(): WorkerProfileWithName[] {
+    return Array.from(this.workerProfiles.values())
+      .filter(wp => wp.is_verified)
+      .map(wp => ({
+        ...wp,
+        user_name: this.users.get(wp.user_id)?.full_name ?? 'Unknown Worker',
+      }));
+  }
+
+  // Review operations
+  addReview(data: Omit<Review, 'id' | 'created_at'>): Review | undefined {
+    const shift = this.shifts.get(data.shift_id);
+    if (!shift || shift.status !== 'paid') return undefined;
+    if (!Number.isInteger(data.rating_stars) || data.rating_stars < 1 || data.rating_stars > 5) return undefined;
+
+    // Only the two parties of a shift may review each other, once each
+    const parties = [shift.posted_by, shift.worker_id];
+    if (!parties.includes(data.reviewer_id) || !parties.includes(data.reviewee_id)) return undefined;
+    if (data.reviewer_id === data.reviewee_id) return undefined;
+    if (this.hasReviewed(data.shift_id, data.reviewer_id)) return undefined;
+
+    const review: Review = {
+      ...data,
+      feedback_text: data.feedback_text.trim(),
+      id: this.generateId('rev'),
+      created_at: new Date().toISOString(),
+    };
+    this.reviews.set(review.id, review);
+    this.createNotification(
+      data.reviewee_id,
+      `You received a ${data.rating_stars}-star review for "${shift.title}".`
+    );
+    return review;
+  }
+
+  hasReviewed(shiftId: string, reviewerId: string): boolean {
+    return Array.from(this.reviews.values())
+      .some(r => r.shift_id === shiftId && r.reviewer_id === reviewerId);
+  }
+
+  getReviewsForUser(userId: string): Review[] {
+    return Array.from(this.reviews.values())
+      .filter(r => r.reviewee_id === userId)
+      .sort((a, b) => {
+        const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        return b.id.localeCompare(a.id);
+      });
+  }
+
+  getAverageRating(userId: string): number {
+    return calculateAverageRating(this.getReviewsForUser(userId));
+  }
+
+  getUnreviewedPaidShifts(userId: string, role: 'business' | 'worker'): Shift[] {
+    return Array.from(this.shifts.values()).filter(s => {
+      if (s.status !== 'paid' || !s.worker_id) return false;
+      const isParty = role === 'business' ? s.posted_by === userId : s.worker_id === userId;
+      return isParty && !this.hasReviewed(s.id, userId);
+    });
+  }
+
   // Transaction operations
   getTransactionByShiftId(shiftId: string): TransactionRecord | undefined {
     return this.transactions.get(shiftId);
@@ -828,6 +896,7 @@ class MockDatabase {
     this.shifts.clear();
     this.notifications.clear();
     this.transactions.clear();
+    this.reviews.clear();
     this.idCounter = 100;
     this.seed();
   }
